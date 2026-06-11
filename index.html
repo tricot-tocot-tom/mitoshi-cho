@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.2</title>
+<title>みゃみゃの見通し帳 ver.1.3</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -55,7 +55,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.2</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.3</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -85,6 +85,16 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <p class="small">生活費40,000円以内。6/30に10,000円以上残す。Oliveは触らない。</p>
     <p class="small">🐥じゅり「全体残高は見てもいいけれど、使っていい金額ではないわ」</p>
   </div>
+
+  <div class="card warnBox">
+    <h2>💾 バックアップのルール</h2>
+    <div class="row"><span>バージョンアップ前</span><strong>必ず書き出し</strong></div>
+    <div class="row"><span>保存先</span><strong>Google Drive</strong></div>
+    <div class="row"><span>おすすめ頻度</span><strong>週1回・月末</strong></div>
+    <div class="row"><span>最終バックアップ</span><strong id="lastBackupHome">未実施</strong></div>
+    <p class="small">🐥じゅり「バックアップは、見通し帳のぼうけんのしょよ」</p>
+  </div>
+
 
   <div class="card">
     <h2>今日のアドバイス</h2>
@@ -273,6 +283,8 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <h2>データ操作</h2>
     <button class="secondary" onclick="exportData()">データを書き出し</button>
     <textarea id="exportBox" rows="8" placeholder="ここに書き出しデータが出ます"></textarea>
+<button class="light" onclick="downloadBackup()">バックアップJSONを保存</button>
+<label>バックアップJSONを読み込み</label><input id="importFile" type="file" accept=".json,application/json" onchange="importBackupFile(event)">
     <button class="light" onclick="importData()">貼り付けたデータを読み込み</button>
     <button class="danger" onclick="resetAll()">全データ削除</button>
   </div>
@@ -460,20 +472,60 @@ function render(){
  storeSummary.innerHTML=rowsFromObj(sumBy(ex,"store"));
  billRows.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong>${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("");
  calendarList.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><span>${b.type==='income'?'入金予定':'引き落とし予定'} ${yen(b.amount)}</span></div>`).join("");
+ if(document.getElementById("lastBackupHome")){lastBackupHome.textContent=localStorage.getItem("mt_last_backup")||"未実施";}
  renderSettings();
 }
-function exportData(){exportBox.value=JSON.stringify({expenses:expenses(),incomes:incomes(),moves:moves(),initialWallets:initialWallets(),goals:goals()},null,2)}
+
+function makeBackupObject(){
+ return {version:"1.3", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), initialWallets:initialWallets(), goals:goals()};
+}
+function exportData(){
+ exportBox.value=JSON.stringify(makeBackupObject(),null,2);
+ localStorage.setItem("mt_last_backup", new Date().toLocaleString("ja-JP"));
+ render();
+}
+function downloadBackup(){
+ const data=JSON.stringify(makeBackupObject(),null,2);
+ const blob=new Blob([data],{type:"application/json"});
+ const a=document.createElement("a");
+ const date=new Date().toISOString().slice(0,10);
+ a.href=URL.createObjectURL(blob);
+ a.download=`mitoshi_backup_${date}.json`;
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ URL.revokeObjectURL(a.href);
+ localStorage.setItem("mt_last_backup", new Date().toLocaleString("ja-JP"));
+ render();
+}
+function importBackupObject(d){
+ if(d.expenses)set("mt_expenses",d.expenses);
+ if(d.incomes)set("mt_incomes",d.incomes);
+ if(d.moves)set("mt_moves",d.moves);
+ if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
+ if(d.goals)set("mt_goals",d.goals);
+ render();
+ alert("読み込みました");
+}
 function importData(){
  try{
    const d=JSON.parse(exportBox.value);
-   if(d.expenses)set("mt_expenses",d.expenses);
-   if(d.incomes)set("mt_incomes",d.incomes);
-   if(d.moves)set("mt_moves",d.moves);
-   if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
-   if(d.goals)set("mt_goals",d.goals);
-   render();alert("読み込みました");
+   importBackupObject(d);
  }catch(e){alert("読み込み失敗。文字が崩れているかも");}
 }
+function importBackupFile(event){
+ const file=event.target.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+   try{
+     const d=JSON.parse(reader.result);
+     importBackupObject(d);
+   }catch(e){alert("読み込み失敗。ファイルを確認してね");}
+ };
+ reader.readAsText(file);
+}
+
 function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n));});
