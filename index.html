@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.4a</title>
+<title>みゃみゃの見通し帳 ver.1.5 beta</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -58,7 +58,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.4a</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -95,7 +95,9 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <div class="row"><span>保存先</span><strong>Google Drive</strong></div>
     <div class="row"><span>おすすめ頻度</span><strong>週1回・月末</strong></div>
     <div class="row"><span>最終バックアップ</span><strong id="lastBackupHome">未実施</strong></div>
-    <p class="small">🐥じゅり「バックアップは、見通し帳のぼうけんのしょよ」</p>\n    <p class="small">支出メモは検索できます。レシートの中身を忘れそうな時はメモへ。</p>
+    <p class="small">🐥じゅり「バックアップは、見通し帳のぼうけんのしょよ」</p>
+    <p class="small">β版では起動画面のバージョン番号を固定。今後はアプリ内表記だけ更新します。</p>
+    <p class="small">支出メモは検索できます。レシートの中身を忘れそうな時はメモへ。</p>
   </div>
 
 
@@ -238,6 +240,22 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>金額</label><input id="mvAmount" type="number" inputmode="numeric">
     <button onclick="addMove()">移動を記録</button>
   </div>
+
+  <div class="card">
+    <h2>資金移動履歴</h2>
+    <label>検索 移動元・移動先</label>
+    <input id="moveSearch" class="searchBox" placeholder="例：七瀬、ゆうちょ、財布1" oninput="render()">
+    <table><thead><tr><th>日付</th><th>移動元</th><th>移動先</th><th class="right">金額</th></tr></thead><tbody id="moveRows"></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>💵 即使用可能資金</h2>
+    <p class="small">ネット以外のリアル買い物で使える可能性がある合計。買い物判断は「生活費残り」「今週残り」を優先。</p>
+    <div id="availableCashRows"></div>
+    <div class="row"><span>合計</span><strong id="availableCashTotal">--</strong></div>
+    <p class="small">優先順：財布1 → 財布3 → スマホポケット → ゆうちょデビット → 七瀬デビット。デビットはなるべく温存。</p>
+  </div>
+
 </section>
 
 <section id="summary" class="screen">
@@ -515,6 +533,25 @@ function render(){
  billRows.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong>${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("");
  calendarList.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><span>${b.type==='income'?'入金予定':'引き落とし予定'} ${yen(b.amount)}</span></div>`).join("");
  if(document.getElementById("lastBackupHome")){lastBackupHome.textContent=localStorage.getItem("mt_last_backup")||"未実施";}
+ 
+ const moveQ=(document.getElementById("moveSearch")?.value || "").toLowerCase();
+ if(document.getElementById("moveRows")){
+   moveRows.innerHTML=moves().filter(m=>{
+     const hay=[m.date,m.from,m.to,m.amount].join(" ").toLowerCase();
+     return !moveQ || hay.includes(moveQ);
+   }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td class="right">${yen(m.amount)}</td></tr>`).join("") || "<tr><td colspan='4'>まだ移動記録なし</td></tr>";
+ }
+ if(document.getElementById("availableCashRows")){
+   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン"];
+   let total=0;
+   availableCashRows.innerHTML=availableNames.map(n=>{
+     const val=wallets[n]||0;
+     total+=val;
+     return `<div class="row"><span>${safeCell(n)}</span><strong>${yen(val)}</strong></div>`;
+   }).join("");
+   availableCashTotal.textContent=yen(total);
+ }
+
  renderSettings();
 }
 
