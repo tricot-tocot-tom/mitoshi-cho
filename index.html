@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>みゃみゃの見通し帳 ver.1.1</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#7aa7c7">
+<style>
+:root{
+  --bg:#f6f5f0;--card:#fff;--line:#dedbd2;--text:#252525;--muted:#666;
+  --accent:#7aa7c7;--danger:#b00020;--warn:#b56b00;--ok:#19733d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;line-height:1.55}
+header{position:sticky;top:0;background:rgba(246,245,240,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 14px;z-index:10}
+h1{font-size:20px;margin:0}.sub{font-size:12px;color:var(--muted)}
+main{max-width:900px;margin:auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+h2{font-size:17px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}}
+.big{font-size:29px;font-weight:800;margin:2px 0}
+.row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed #e5e1d8;padding:7px 0;align-items:flex-start}
+.row:last-child{border-bottom:0}
+label{display:block;font-size:13px;color:var(--muted);margin-top:9px}
+input,select,textarea,button{width:100%;padding:10px;border:1px solid #cfcac0;border-radius:10px;font-size:16px;background:#fff}
+button{border:0;background:#222;color:#fff;font-weight:700;margin-top:12px}
+button.secondary{background:#777}
+button.danger{background:#9b1c1c}
+button.light{background:#eef5f8;color:#222;border:1px solid #d7e8ef}
+.small{font-size:12px;color:var(--muted)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.dangerText{color:var(--danger)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 0}
+.tab{white-space:nowrap;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#222;font-size:14px}
+.tab.active{background:#222;color:#fff}
+.screen{display:none}.screen.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-align:top}
+.right{text-align:right}
+.splash{width:100%;max-height:420px;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
+.pill{display:inline-block;background:#eef5f8;border:1px solid #d7e8ef;border-radius:999px;padding:3px 8px;font-size:12px;margin:2px}
+.progressWrap{background:#eee;border-radius:999px;overflow:hidden;height:12px;margin-top:6px}
+.progressBar{background:#7aa7c7;height:12px;width:0%}
+.budgetMeter{background:#eee;border-radius:999px;overflow:hidden;height:14px;margin:8px 0}
+.budgetFill{height:14px;width:0%;background:#19733d}
+.budgetFill.yellow{background:#d69b00}
+.budgetFill.red{background:#b00020}
+.percentLabel{font-size:12px;color:#666;margin-top:2px}
+.warnBox{border-left:5px solid var(--warn);background:#fff8e8}
+.dangerBox{border-left:5px solid var(--danger);background:#fff1f3}
+.okBox{border-left:5px solid var(--ok);background:#eefaf2}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.1</span></h1>
+  <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
+  <div class="tabs">
+    <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
+    <button class="tab" onclick="showScreen('expense',this)">支出</button>
+    <button class="tab" onclick="showScreen('income',this)">収入</button>
+    <button class="tab" onclick="showScreen('wallets',this)">置き場</button>
+    <button class="tab" onclick="showScreen('summary',this)">累計</button>
+    <button class="tab" onclick="showScreen('settings',this)">設定</button>
+  </div>
+</header>
+
+<main>
+<section id="home" class="screen active">
+  <img class="splash" src="splash.png" alt="起動画面">
+  <div class="card">
+    <h2>今日のアドバイス</h2>
+    <div id="advice" class="big" style="font-size:18px"></div>
+    <div id="adviceDetail" class="small"></div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div class="card okBox">
+    <h2>🎯 6月のミッション</h2>
+    <div class="row"><span>生活費</span><strong>40,000円以内</strong></div>
+    <div class="row"><span>後払い</span><strong>増やさない</strong></div>
+    <div class="row"><span>6/30目標残高</span><strong>10,000円以上</strong></div>
+    <div class="row"><span>ペット費</span><strong>5,000円確保</strong></div>
+    <div class="row"><span>Olive</span><strong>触らない</strong></div>
+    <p class="small">🐥じゅり「全部を同時に考えなくていいわ。まず固定費、次に40,000円生活よ✨」</p>
+  </div>
+
+  <div class="card warnBox">
+    <h2>🚨 6月〜7月頭の危険日</h2>
+    <div class="row"><span>6/25 水道</span><strong>6,000円</strong></div>
+    <div class="row"><span>6/26 スマホ関連＋差額</span><strong>32,000円</strong></div>
+    <div class="row"><span>6/28 ガス電気</span><strong>10,000円</strong></div>
+    <div class="row"><span>7/2 保険</span><strong>1,500円</strong></div>
+    <p class="small">🐦ちゅの「この期間は防衛でし。後払いと雑費は控えめでし」</p>
+  </div>
+
+  <div class="card">
+    <h2>🏠 固定費合計</h2>
+    <div class="row"><span>6月固定費</span><strong id="fixedJune">--</strong></div>
+    <div class="row"><span>7月固定費</span><strong id="fixedJuly">--</strong></div>
+    <p class="small">目安：50,000円未満は緑、50,000円以上は黄、60,000円以上は赤。</p>
+  </div>
+
+
+  <div class="grid">
+    <div class="card">
+      <div class="small">生活枠 残り / 実使用上限40,000円</div>
+      <div id="lifeRemain" class="big">--</div>
+      <div class="budgetMeter"><div id="lifeRemainBar" class="budgetFill"></div></div>
+      <div id="lifePercent" class="percentLabel"></div>
+      <div class="small">理論枠43,500円のうち、3,500円は貯金その他として防衛。</div>
+    </div>
+    <div class="card">
+      <div class="small">今週残り / 10,000円</div>
+      <div id="weekRemain" class="big">--</div>
+      <div class="budgetMeter"><div id="weekRemainBar" class="budgetFill"></div></div>
+      <div id="weekPercent" class="percentLabel"></div>
+    </div>
+    <div class="card"><div class="small">今日使える目安</div><div id="dailyAmount" class="big">--</div></div>
+    <div class="card"><div class="small">医費累計</div><div id="medicalTotalTop" class="big">--</div></div>
+  </div>
+  <div class="card">
+    <h2>貯金その他 防衛枠</h2>
+    <div class="row"><span>月ごとの理論生活枠</span><strong>43,500円</strong></div>
+    <div class="row"><span>実使用上限</span><strong>40,000円</strong></div>
+    <div class="row"><span>貯金その他</span><strong>3,500円</strong></div>
+  </div>
+
+  <div class="card">
+    <h2>🐦 ペット費 目標</h2>
+    <div class="row"><span>今月使用</span><strong id="petUsed">--</strong></div>
+    <div class="row"><span>目標</span><strong id="petGoal">--</strong></div>
+    <div class="progressWrap"><div id="petProgress" class="progressBar"></div></div>
+    <div id="petNote" class="small"></div>
+  </div>
+
+  <div class="card">
+    <h2>次の予定</h2>
+    <div id="upcoming"></div>
+  </div>
+</section>
+
+<section id="expense" class="screen">
+  <div class="card">
+    <h2>支出入力</h2>
+    <label>日付</label><input id="exDate" type="date">
+    <label>店名</label><input id="exStore" placeholder="西友、ツルハ、Amazonなど">
+    <label>カテゴリ</label>
+    <select id="exCategory">
+      <optgroup label="生活40,000円枠">
+        <option>食費</option><option>日用品</option><option>雑費</option><option>ペット費</option>
+      </optgroup>
+      <optgroup label="医費 別累計">
+        <option>病院</option><option>薬局</option><option>市販薬</option>
+      </optgroup>
+    </select>
+    <label>支払方法</label>
+    <select id="exPay">
+      <option>現金</option><option>七瀬デビット</option><option>ゆうちょデビット</option><option>Oliveデビット</option>
+      <option>ソフトバンク払い</option><option>ペイディ</option><option>その他後払い</option>
+    </select>
+    <label>金額</label><input id="exAmount" type="number" inputmode="numeric" placeholder="例：2180">
+    <label>メモ 任意</label><input id="exMemo" placeholder="例：卵、鳥ごはん、湿布">
+    <button onclick="addExpense()">支出を追加</button>
+  </div>
+  <div class="card">
+    <h2>支出履歴</h2>
+    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th></tr></thead><tbody id="expenseRows"></tbody></table>
+  </div>
+</section>
+
+<section id="income" class="screen">
+  <div class="card">
+    <h2>収入入力</h2>
+    <label>日付</label><input id="inDate" type="date">
+    <label>名目</label>
+    <select id="inType">
+      <option>障害年金</option><option>医費補助</option><option>福祉医療費</option><option>返金</option>
+      <option>臨時収入</option><option>売上</option><option>その他</option><option>借入 前借り</option>
+    </select>
+    <label>入金先</label><select id="inTo"></select>
+    <label>金額</label><input id="inAmount" type="number" inputmode="numeric" placeholder="例：107499">
+    <label>メモ 任意</label><input id="inMemo">
+    <button onclick="addIncome()">収入を追加</button>
+    <p class="small">前借りは収入ではなく借入として表示します。</p>
+  </div>
+  <div class="card">
+    <h2>収入履歴</h2>
+    <table><thead><tr><th>日付</th><th>名目</th><th>入金先</th><th class="right">金額</th></tr></thead><tbody id="incomeRows"></tbody></table>
+  </div>
+</section>
+
+<section id="wallets" class="screen">
+  <div class="card">
+    <h2>資金置き場</h2>
+    <div id="walletRows"></div>
+  </div>
+  <div class="card">
+    <h2>資金移動</h2>
+    <label>日付</label><input id="mvDate" type="date">
+    <label>移動元</label><select id="mvFrom"></select>
+    <label>移動先</label><select id="mvTo"></select>
+    <label>金額</label><input id="mvAmount" type="number" inputmode="numeric">
+    <button onclick="addMove()">移動を記録</button>
+  </div>
+</section>
+
+<section id="summary" class="screen">
+  <div class="card">
+    <h2>カテゴリ累計</h2>
+    <div id="categorySummary"></div>
+  </div>
+  <div class="card">
+    <h2>医費累計</h2>
+    <div id="medicalSummary"></div>
+  </div>
+  <div class="card">
+    <h2>支払方法別</h2>
+    <div id="paySummary"></div>
+  </div>
+  <div class="card">
+    <h2>店別累計</h2>
+    <div id="storeSummary"></div>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="card">
+    <h2>初期残高編集</h2>
+    <div id="initialBalanceInputs"></div>
+    <button onclick="saveInitialBalances()">初期残高を保存</button>
+    <p class="small">ここを変更すると、現在の資金置き場計算の起点が変わります。</p>
+  </div>
+
+  <div class="card">
+    <h2>目標設定</h2>
+    <label>ペット費目標（月額・えさ医療込み）</label>
+    <input id="settingPetGoal" type="number" inputmode="numeric">
+    <button onclick="saveGoals()">目標を保存</button>
+  </div>
+
+  <div class="card">
+    <h2>Googleカレンダー用 予定一覧</h2>
+    <p class="small">通知はGoogleカレンダー側で「前日」「当日朝」を設定するのがおすすめ。</p>
+    <div id="calendarList"></div>
+  </div>
+
+  <div class="card">
+    <h2>固定費・予定</h2>
+    <div id="billRows"></div>
+  </div>
+
+  <div class="card">
+    <h2>データ操作</h2>
+    <button class="secondary" onclick="exportData()">データを書き出し</button>
+    <textarea id="exportBox" rows="8" placeholder="ここに書き出しデータが出ます"></textarea>
+    <button class="light" onclick="importData()">貼り付けたデータを読み込み</button>
+    <button class="danger" onclick="resetAll()">全データ削除</button>
+  </div>
+</section>
+</main>
+
+<script>
+const THEORETICAL_LIFE_BUDGET=43500, LIFE_BUDGET=40000, SAVING_OTHER=3500, WEEK_BUDGET=10000;
+const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T23:59:59");
+const lifeCats=["食費","日用品","雑費","ペット費"];
+const medicalCats=["病院","薬局","市販薬"];
+const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
+const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
+const defaultGoals={petGoal:5000};
+const bills=[
+ {date:"2026-06-15",name:"障害年金",amount:107499,type:"income"},
+ {date:"2026-06-20",name:"医費補助",amount:30000,type:"income"},
+ {date:"2026-06-25",name:"水道",amount:6000,type:"fixed"},
+ {date:"2026-06-26",name:"スマホ関連",amount:30500,type:"fixed"},
+ {date:"2026-06-26",name:"スマホ差額 6月",amount:1500,type:"fixed"},
+ {date:"2026-06-28",name:"ガス電気",amount:10000,type:"fixed"},
+ {date:"2026-07-02",name:"保険",amount:1500,type:"fixed"},
+ {date:"2026-07-04",name:"Niagara Launcher 年払い",amount:1200,type:"fixed"},
+ {date:"2026-07-15",name:"障害年金 1ヶ月分目安",amount:107499,type:"income"},
+ {date:"2026-07-20",name:"医費補助",amount:30000,type:"income"},
+ {date:"2026-07-25",name:"水道",amount:6000,type:"fixed"},
+ {date:"2026-07-26",name:"スマホ関連",amount:30500,type:"fixed"},
+ {date:"2026-07-26",name:"スマホ差額 7月",amount:6500,type:"fixed"},
+ {date:"2026-07-28",name:"ガス電気",amount:10000,type:"fixed"},
+ {date:"2026-07-27",name:"ペイディ後払い",amount:14974,type:"fixed"},
+ {date:"2026-08-02",name:"保険",amount:1500,type:"fixed"},
+ {date:"2026-11-12",name:"PicsArt 年払い",amount:6600,type:"fixed"}
+];
+function yen(n){return Math.round(Number(n)||0).toLocaleString("ja-JP")+"円"}
+function todayISO(){return new Date().toISOString().slice(0,10)}
+function get(k,d){return JSON.parse(localStorage.getItem(k)||JSON.stringify(d))}
+function set(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function expenses(){return get("mt_expenses",[])}
+function incomes(){return get("mt_incomes",[])}
+function moves(){return get("mt_moves",[])}
+function initialWallets(){return get("mt_initial_wallets",defaultInitialWallets)}
+function goals(){return get("mt_goals",defaultGoals)}
+function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()+((day===0?-6:1)-day));x.setHours(0,0,0,0);return x}
+function sameWeek(a,b){return startWeek(a).getTime()===startWeek(b).getTime()}
+function showScreen(id,btn){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()}
+function addExpense(){
+ const item={date:exDate.value,store:exStore.value.trim()||"未記入",category:exCategory.value,pay:exPay.value,amount:Number(exAmount.value),memo:exMemo.value.trim()};
+ if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
+ const a=expenses();a.push(item);set("mt_expenses",a);exAmount.value="";exMemo.value="";render()
+}
+function addIncome(){
+ const item={date:inDate.value,type:inType.value,to:inTo.value,amount:Number(inAmount.value),memo:inMemo.value.trim()};
+ if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
+ const a=incomes();a.push(item);set("mt_incomes",a);inAmount.value="";inMemo.value="";render()
+}
+function addMove(){
+ const item={date:mvDate.value,from:mvFrom.value,to:mvTo.value,amount:Number(mvAmount.value)};
+ if(!item.date||!item.amount||item.from===item.to){alert("日付・金額・移動先を確認してね");return}
+ const a=moves();a.push(item);set("mt_moves",a);mvAmount.value="";render()
+}
+function sumBy(arr,key,filter=()=>true){let o={};arr.filter(filter).forEach(x=>{let k=x[key]||"未記入";o[k]=(o[k]||0)+Number(x.amount)});return o}
+function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
+function calcWallets(){
+ let w={...initialWallets()};
+ incomes().forEach(i=>{w[i.to]=(w[i.to]||0)+Number(i.amount)});
+ moves().forEach(m=>{w[m.from]=(w[m.from]||0)-Number(m.amount);w[m.to]=(w[m.to]||0)+Number(m.amount)});
+ expenses().forEach(e=>{
+   if(e.pay==="現金"){
+     if(lifeCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
+     else if(e.category==="市販薬") w["財布3 市販薬"]-=Number(e.amount);
+   }
+   if(e.pay==="七瀬デビット") w["八十二 七瀬 生活メイン"]-=Number(e.amount);
+   if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
+   if(e.pay==="Oliveデビット") w["Olive 来月keep"]-=Number(e.amount);
+ });
+ return w;
+}
+function daysUntil(dateStr){
+ const today=new Date(todayISO()+"T00:00:00");
+ const d=new Date(dateStr+"T00:00:00");
+ return Math.round((d-today)/86400000);
+}
+
+function fixedTotalForMonth(monthNumber){
+  return bills
+    .filter(b => b.type==="fixed" && (new Date(b.date+"T00:00:00").getMonth()+1)===monthNumber)
+    .reduce((s,b)=>s+Number(b.amount),0);
+}
+function fixedTotalClass(total){
+  if(total>=60000)return "dangerText";
+  if(total>=50000)return "warn";
+  return "ok";
+}
+
+function renderAlerts(){
+ const upcoming=bills.filter(b=>b.type==="fixed").map(b=>({...b,days:daysUntil(b.date)})).filter(b=>b.days>=0&&b.days<=3).sort((a,b)=>a.days-b.days);
+ if(!upcoming.length){alerts.innerHTML="";return}
+ alerts.innerHTML=upcoming.map(b=>{
+   const box=b.days<=1?"dangerBox":"warnBox";
+   const txt=b.days===0?"今日":b.days===1?"明日":`${b.days}日後`;
+   return `<div class="card ${box}"><strong>⚠️ ${txt}：${b.name} ${yen(b.amount)}</strong><div class="small">Googleカレンダー通知も確認。今日は後払い・雑費を控えめに。</div></div>`
+ }).join("");
+}
+function renderAdvice(lifeRemain,weekRemain,medicalTotal,payObj,wallets,petUsed,petGoal){
+ let postpay=(payObj["ソフトバンク払い"]||0)+(payObj["ペイディ"]||0)+(payObj["その他後払い"]||0);
+ let msg="🐥じゅり「観測開始よ✨」", detail="まず入力できていることが大事。完璧より継続。";
+ if(wallets["財布1 生活"]<800){msg="🌸さくら「ごはんは最後まで守るでし」";detail="財布1が少なめ。食費を最優先にして、雑費は止め気味で。";}
+ if(petUsed<petGoal*0.4){msg="🤍とこ「ペット費は確保したいお金です」";detail="ペット費は削るだけの欄ではなく、えさ・医療込みで月5000円を目標に。";}
+ if(postpay>0){msg="🐤ぶん「はい～。後払いが出ています～」";detail="後払いは未来の予算を先に使う欄。次回は七瀬デビット優先。";}
+ if(weekRemain<2000){msg="🐦ちゅの「今週はブレーキでし」";detail="買い物前に在庫確認。財布2とスマホポケットは崩さない方が良い。";}
+ if(lifeRemain<0){msg="🐥じゅり「警告。40,000円枠を超過しているわ」";detail="ここからは必要品優先。雑費と後払いは停止。";}
+ advice.textContent=msg;adviceDetail.textContent=detail;
+}
+function renderSettings(){
+ const iw=initialWallets();
+ initialBalanceInputs.innerHTML=walletNames.map(n=>`<label>${n}</label><input class="initialInput" data-wallet="${n}" type="number" inputmode="numeric" value="${iw[n]||0}">`).join("");
+ settingPetGoal.value=goals().petGoal;
+}
+function saveInitialBalances(){
+ let obj={};
+ document.querySelectorAll(".initialInput").forEach(i=>obj[i.dataset.wallet]=Number(i.value)||0);
+ set("mt_initial_wallets",obj);render();alert("初期残高を保存したよ");
+}
+function saveGoals(){
+ set("mt_goals",{petGoal:Number(settingPetGoal.value)||5000});render();alert("目標を保存したよ");
+}
+
+function setRemainBar(barId,labelId,remain,budget){
+ const pct=Math.max(0,Math.min(100,Math.round((remain/budget)*100)));
+ const bar=document.getElementById(barId);
+ const label=document.getElementById(labelId);
+ if(!bar||!label)return;
+ bar.style.width=pct+"%";
+ bar.classList.remove("yellow","red");
+ if(pct<=30){bar.classList.add("red");}
+ else if(pct<=50){bar.classList.add("yellow");}
+ label.textContent=`残り ${pct}%（70%以上 緑 / 50%以下 黄 / 30%以下 赤）`;
+}
+
+function render(){
+ const ex=expenses(), inc=incomes(), today=new Date(todayISO()+"T00:00:00"), g=goals();
+ const lifeUsed=ex.filter(e=>lifeCats.includes(e.category)).reduce((s,e)=>s+Number(e.amount),0);
+ const lifeRemain=LIFE_BUDGET-lifeUsed;
+ const weekUsed=ex.filter(e=>lifeCats.includes(e.category)&&sameWeek(new Date(e.date+"T00:00:00"),today)).reduce((s,e)=>s+Number(e.amount),0);
+ const weekRemain=WEEK_BUDGET-weekUsed;
+ const medUsed=ex.filter(e=>medicalCats.includes(e.category)).reduce((s,e)=>s+Number(e.amount),0);
+ const petUsed=ex.filter(e=>e.category==="ペット費").reduce((s,e)=>s+Number(e.amount),0);
+ const days=Math.max(1,Math.ceil((TEST_END-today)/86400000));
+ lifeRemainEl=lifeRemain; document.getElementById("lifeRemain").textContent=yen(lifeRemain);
+ document.getElementById("weekRemain").textContent=yen(weekRemain);
+ document.getElementById("dailyAmount").textContent=yen(lifeRemain/days);
+ document.getElementById("medicalTotalTop").textContent=yen(medUsed);
+
+ const juneFixed=fixedTotalForMonth(6);
+ const julyFixed=fixedTotalForMonth(7);
+ if(document.getElementById("fixedJune")){
+   fixedJune.textContent=yen(juneFixed);
+   fixedJune.className=fixedTotalClass(juneFixed);
+ }
+ if(document.getElementById("fixedJuly")){
+   fixedJuly.textContent=yen(julyFixed);
+   fixedJuly.className=fixedTotalClass(julyFixed);
+ }
+
+ setRemainBar("lifeRemainBar","lifePercent",lifeRemain,LIFE_BUDGET);
+ setRemainBar("weekRemainBar","weekPercent",weekRemain,WEEK_BUDGET);
+ petUsedEl=petUsed; petUsed.textContent
+ document.getElementById("petUsed").textContent=yen(petUsed);
+ document.getElementById("petGoal").textContent=yen(g.petGoal);
+ let pct=Math.min(100, Math.round((petUsed/(g.petGoal||5000))*100));
+ document.getElementById("petProgress").style.width=pct+"%";
+ document.getElementById("petNote").textContent=`達成率 ${pct}%。ペット費は、えさ・医療込みで確保したいお金。`;
+ const payObj=sumBy(ex,"pay");
+ const wallets=calcWallets();
+ renderAlerts();
+ renderAdvice(lifeRemain,weekRemain,medUsed,payObj,wallets,petUsed,g.petGoal);
+ const up=bills.map(b=>({...b,d:new Date(b.date+"T00:00:00")})).filter(b=>b.d>=today&&b.d<=new Date(today.getTime()+30*86400000)).sort((a,b)=>a.d-b.d);
+ upcoming.innerHTML=up.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong class="${b.type==='income'?'ok':'dangerText'}">${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("")||"<p class='small'>30日以内の予定なし</p>";
+ expenseRows.innerHTML=ex.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.store}</td><td>${e.category}</td><td>${e.pay}</td><td class="right">${yen(e.amount)}</td></tr>`).join("");
+ incomeRows.innerHTML=inc.slice().reverse().map(i=>`<tr><td>${i.date}</td><td>${i.type}</td><td>${i.to}</td><td class="right">${yen(i.amount)}</td></tr>`).join("");
+ walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
+ categorySummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
+ medicalSummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>medicalCats.includes(e.category)));
+ paySummary.innerHTML=rowsFromObj(payObj);
+ storeSummary.innerHTML=rowsFromObj(sumBy(ex,"store"));
+ billRows.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong>${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("");
+ calendarList.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><span>${b.type==='income'?'入金予定':'引き落とし予定'} ${yen(b.amount)}</span></div>`).join("");
+ renderSettings();
+}
+function exportData(){exportBox.value=JSON.stringify({expenses:expenses(),incomes:incomes(),moves:moves(),initialWallets:initialWallets(),goals:goals()},null,2)}
+function importData(){
+ try{
+   const d=JSON.parse(exportBox.value);
+   if(d.expenses)set("mt_expenses",d.expenses);
+   if(d.incomes)set("mt_incomes",d.incomes);
+   if(d.moves)set("mt_moves",d.moves);
+   if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
+   if(d.goals)set("mt_goals",d.goals);
+   render();alert("読み込みました");
+ }catch(e){alert("読み込み失敗。文字が崩れているかも");}
+}
+function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
+document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
+walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n));});
+render();
+</script>
+</body>
+</html>

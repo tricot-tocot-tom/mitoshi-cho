@@ -1,0 +1,16 @@
+{
+  "name": "みゃみゃの見通し帳",
+  "short_name": "見通し帳",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f6f5f0",
+  "theme_color": "#7aa7c7",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
