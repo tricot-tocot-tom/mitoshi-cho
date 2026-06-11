@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.1</title>
+<title>みゃみゃの見通し帳 ver.1.2</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -55,7 +55,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.1</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.2</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -70,6 +70,22 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 <main>
 <section id="home" class="screen active">
   <img class="splash" src="splash.png" alt="起動画面">
+
+  <div class="card dangerBox">
+    <h2>📌 見通し帳のルール</h2>
+    <div class="row"><span>全体残高</span><strong>使っていい金額ではない</strong></div>
+    <p class="small">固定費・来月分・ペット費・医費が混ざっています。買い物判断は「生活費残り」「今週残り」で見ること。</p>
+    <div class="row"><span>レシート</span><strong>証拠。予測ではない</strong></div>
+    <p class="small">レシートは保存。買い物したら見通し帳へ入力。入力済みは月末まで保管でOK。</p>
+    <div class="row"><span>迷った時</span><strong>固定費優先</strong></div>
+    <p class="small">水道・スマホ・ガス電気・保険・ペイディを先に守る。</p>
+    <div class="row"><span>後払い</span><strong>増やさない</strong></div>
+    <p class="small">ペイディ、ソフトバンク払い、その他後払いは未来の予算を先に使う欄。</p>
+    <div class="row"><span>6月の勝利条件</span><strong>7月へつなぐ</strong></div>
+    <p class="small">生活費40,000円以内。6/30に10,000円以上残す。Oliveは触らない。</p>
+    <p class="small">🐥じゅり「全体残高は見てもいいけれど、使っていい金額ではないわ」</p>
+  </div>
+
   <div class="card">
     <h2>今日のアドバイス</h2>
     <div id="advice" class="big" style="font-size:18px"></div>
