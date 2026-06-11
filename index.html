@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.3</title>
+<title>みゃみゃの見通し帳 ver.1.4</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -41,6 +41,8 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 .right{text-align:right}
 .splash{width:100%;max-height:420px;object-fit:cover;border-radius:16px;border:1px solid var(--line)}
 .pill{display:inline-block;background:#eef5f8;border:1px solid #d7e8ef;border-radius:999px;padding:3px 8px;font-size:12px;margin:2px}
+.miniBtn{padding:5px 8px;font-size:12px;border-radius:8px;margin:0;background:#eef5f8;color:#222;border:1px solid #d7e8ef}
+.searchBox{margin-bottom:10px}
 .progressWrap{background:#eee;border-radius:999px;overflow:hidden;height:12px;margin-top:6px}
 .progressBar{background:#7aa7c7;height:12px;width:0%}
 .budgetMeter{background:#eee;border-radius:999px;overflow:hidden;height:14px;margin:8px 0}
@@ -55,7 +57,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.3</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.4</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -93,6 +95,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <div class="row"><span>おすすめ頻度</span><strong>週1回・月末</strong></div>
     <div class="row"><span>最終バックアップ</span><strong id="lastBackupHome">未実施</strong></div>
     <p class="small">🐥じゅり「バックアップは、見通し帳のぼうけんのしょよ」</p>
+    <p class="small">支出メモは検索できます。レシートの中身を忘れそうな時はメモへ。</p>
   </div>
 
 
@@ -194,7 +197,10 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
   <div class="card">
     <h2>支出履歴</h2>
-    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th></tr></thead><tbody id="expenseRows"></tbody></table>
+    <label>検索 店名・カテゴリ・支払・メモ</label>
+    <input id="expenseSearch" class="searchBox" placeholder="例：キラヤ、卵、ペイディ" oninput="render()">
+    <p class="small">メモも履歴に表示します。レシートの中身を忘れそうな時はメモへ。</p>
+    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th><th>メモ</th><th>詳細</th></tr></thead><tbody id="expenseRows"></tbody></table>
   </div>
 </section>
 
@@ -346,6 +352,27 @@ function addMove(){
  const a=moves();a.push(item);set("mt_moves",a);mvAmount.value="";render()
 }
 function sumBy(arr,key,filter=()=>true){let o={};arr.filter(filter).forEach(x=>{let k=x[key]||"未記入";o[k]=(o[k]||0)+Number(x.amount)});return o}
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, function(m){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}[m];
+  });
+}
+function showExpenseDetail(index){
+  const e=expenses()[index];
+  if(!e){alert("データが見つかりません");return;}
+  alert(
+`支出詳細
+
+日付：${e.date}
+店名：${e.store || "未記入"}
+カテゴリ：${e.category}
+支払方法：${e.pay}
+金額：${yen(e.amount)}
+メモ：${e.memo || "なし"}`
+  );
+}
+
 function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
 function calcWallets(){
  let w={...initialWallets()};
@@ -463,7 +490,15 @@ function render(){
  renderAdvice(lifeRemain,weekRemain,medUsed,payObj,wallets,petUsed,g.petGoal);
  const up=bills.map(b=>({...b,d:new Date(b.date+"T00:00:00")})).filter(b=>b.d>=today&&b.d<=new Date(today.getTime()+30*86400000)).sort((a,b)=>a.d-b.d);
  upcoming.innerHTML=up.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong class="${b.type==='income'?'ok':'dangerText'}">${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("")||"<p class='small'>30日以内の予定なし</p>";
- expenseRows.innerHTML=ex.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.store}</td><td>${e.category}</td><td>${e.pay}</td><td class="right">${yen(e.amount)}</td></tr>`).join("");
+ const q=(document.getElementById("expenseSearch")?.value || "").toLowerCase();
+ expenseRows.innerHTML=ex.map((e,i)=>({...e,_i:i}))
+   .filter(e=>{
+     const hay=[e.date,e.store,e.category,e.pay,e.amount,e.memo].join(" ").toLowerCase();
+     return !q || hay.includes(q);
+   })
+   .slice().reverse()
+   .map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.store)}</td><td>${esc(e.category)}</td><td>${esc(e.pay)}</td><td class="right">${yen(e.amount)}</td><td>${esc(e.memo||"")}</td><td><button class="miniBtn" onclick="showExpenseDetail(${e._i})">見る</button></td></tr>`)
+   .join("");
  incomeRows.innerHTML=inc.slice().reverse().map(i=>`<tr><td>${i.date}</td><td>${i.type}</td><td>${i.to}</td><td class="right">${yen(i.amount)}</td></tr>`).join("");
  walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
  categorySummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
