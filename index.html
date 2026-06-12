@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.5 beta</title>
+<title>みゃみゃの見通し帳 ver.1.5 beta-2-2</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -58,7 +58,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta-2</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -89,6 +89,29 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <p class="small">🐥じゅり「全体残高は見てもいいけれど、使っていい金額ではないわ」</p>
   </div>
 
+
+  <div class="card okBox">
+    <h2>📯 希望の鐘</h2>
+    <p style="font-size:16px;line-height:1.8;margin:0 0 8px">
+      いつまでも君でいるため<br>
+      明日を諦めてはいけない<br><br>
+      変わらない君であるため<br>
+      孤独に負けないで<br>
+      自分に勝つために
+    </p>
+    <p class="small">THE ALFEE「希望の鐘が鳴る朝に」より。これは見通し帳の作戦目的です。</p>
+  </div>
+
+  <div class="card dangerBox">
+    <h2>🚨 購入前確認</h2>
+    <div class="row"><span>今週予算で払えるか</span><strong>確認</strong></div>
+    <div class="row"><span>前線基地（七瀬）で払えるか</span><strong>確認</strong></div>
+    <div class="row"><span>補給基地（南長野）を崩さないか</span><strong>確認</strong></div>
+    <div class="row"><span>48時間後も欲しいか</span><strong>確認</strong></div>
+    <div class="row"><span>今の私は不安を買おうとしていないか</span><strong>確認</strong></div>
+    <p class="small">🐥じゅり「欲しいものを見た時ほど、まず作戦確認よ」</p>
+  </div>
+
   <div class="card warnBox">
     <h2>💾 バックアップのルール</h2>
     <div class="row"><span>バージョンアップ前</span><strong>必ず書き出し</strong></div>
@@ -101,24 +124,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
 
 
-  
   <div class="card">
-    <h2>📯 希望の鐘</h2>
-    <p>いつまでも君でいるため 明日を諦めてはいけない</p>
-    <p>変わらない君であるため 孤独に負けないで 自分に勝つために</p>
-    <p class="small">（THE ALFEE「希望の鐘が鳴る朝に」より）</p>
-  </div>
-
-  <div class="card warnBox">
-    <h2>🚨 購入前確認</h2>
-    <p>□ 今週予算で払えるか</p>
-    <p>□ 前線基地（七瀬）で払えるか</p>
-    <p>□ 補給基地（南長野）を崩さないか</p>
-    <p>□ 48時間後も欲しいか</p>
-    <p>□ 今の私は不安を買おうとしていないか</p>
-  </div>
-
-<div class="card">
     <h2>今日のアドバイス</h2>
     <div id="advice" class="big" style="font-size:18px"></div>
     <div id="adviceDetail" class="small"></div>
@@ -245,6 +251,21 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </section>
 
 <section id="wallets" class="screen">
+
+  <div class="card okBox">
+    <h2>🗺️ 作戦司令室</h2>
+    <div class="row"><span>🟩 南長野基地</span><strong>補給基地</strong></div>
+    <p class="small">任務：福祉医療費受取、月残り生活費保管、七瀬への補給。ここは今週使うお金ではない。</p>
+    <div class="row"><span>🟦 七瀬前線基地</span><strong>今週生活費</strong></div>
+    <p class="small">任務：1週間分の生活費、デビット利用、日常運用。使うのは基本ここ。</p>
+    <div class="row"><span>💵 財布部隊</span><strong>現金優先</strong></div>
+    <p class="small">優先順：財布1 → 財布3 → スマホポケット → ゆうちょ → 七瀬。デビットは温存。</p>
+    <div class="row"><span>🎯 作戦目標</span><strong>南長野 → 七瀬 → 生活</strong></div>
+    <p class="small">七瀬に月額全部を置かない。週ごとに補給する。</p>
+    <div class="row"><span>🚨 最重要命令</span><strong>補給基地を空にしない</strong></div>
+    <p class="small">🐦ちゅの「七瀬は前線、南長野は補給基地でし」</p>
+  </div>
+
   <div class="card">
     <h2>資金置き場</h2>
     <div id="walletRows"></div>
@@ -258,22 +279,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <button onclick="addMove()">移動を記録</button>
   </div>
 
-  
   <div class="card">
-    <h2>🗺️ 作戦司令室</h2>
-    <h3>🟩 南長野基地（補給基地）</h3>
-    <p>任務：福祉医療費受取・月残り生活費保管・七瀬への補給</p>
-    <p>注意：ここは今週使うお金ではない</p>
-    <h3>🟦 七瀬前線基地</h3>
-    <p>任務：今週生活費・デビット利用・日常運用</p>
-    <p>注意：使うのはここ</p>
-    <h3>🎯 作戦目標</h3>
-    <p>南長野 → 七瀬 → 生活</p>
-    <h3>🚨 最重要命令</h3>
-    <p>七瀬は前線基地。南長野は補給基地。補給基地を空にしない。</p>
-  </div>
-
-<div class="card">
     <h2>資金移動履歴</h2>
     <label>検索 移動元・移動先</label>
     <input id="moveSearch" class="searchBox" placeholder="例：七瀬、ゆうちょ、財布1" oninput="render()">
