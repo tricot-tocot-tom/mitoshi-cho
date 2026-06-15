@@ -291,7 +291,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <p class="small">ネット以外のリアル買い物で使える可能性がある合計。買い物判断は「生活費残り」「今週残り」を優先。</p>
     <div id="availableCashRows"></div>
     <div class="row"><span>合計</span><strong id="availableCashTotal">--</strong></div>
-    <p class="small">優先順：財布1 → 財布3 → スマホポケット → ゆうちょデビット → 七瀬デビット。デビットはなるべく温存。</p>
+    <p class="small">優先順：財布1 → 財布3 → スマホポケット → 七瀬デビット → Olive。固定費口座（ゆうちょ）は除外。</p>
   </div>
 
 </section>
@@ -580,7 +580,7 @@ function render(){
    }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td class="right">${yen(m.amount)}</td></tr>`).join("") || "<tr><td colspan='4'>まだ移動記録なし</td></tr>";
  }
  if(document.getElementById("availableCashRows")){
-   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン"];
+   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 生活メイン","Olive 来月keep"];
    let total=0;
    availableCashRows.innerHTML=availableNames.map(n=>{
      const val=wallets[n]||0;
