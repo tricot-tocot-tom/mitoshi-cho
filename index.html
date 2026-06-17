@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.5 beta-2-2</title>
+<title>みゃみゃの見通し帳 ver.1.5 beta-3</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -58,7 +58,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta-2</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta-3</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -206,6 +206,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <select id="exCategory">
       <optgroup label="生活40,000円枠">
         <option>食費</option><option>日用品</option><option>雑費</option><option>ペット費</option>
+        <option>差額計算</option><option>その他</option>
       </optgroup>
       <optgroup label="医費 別累計">
         <option>病院</option><option>薬局</option><option>市販薬</option>
@@ -218,14 +219,16 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     </select>
     <label>金額</label><input id="exAmount" type="number" inputmode="numeric" placeholder="例：2180">
     <label>メモ 任意</label><input id="exMemo" placeholder="例：卵、鳥ごはん、湿布">
-    <button onclick="addExpense()">支出を追加</button>
+    <input id="exEditIndex" type="hidden" value="">
+    <button id="exSubmitBtn" onclick="saveExpense()">支出を追加</button>
+    <button id="exCancelBtn" class="secondary" style="display:none" onclick="cancelExpenseEdit()">修正をやめる</button>
   </div>
   <div class="card">
     <h2>支出履歴</h2>
     <label>検索 店名・カテゴリ・支払・メモ</label>
     <input id="expenseSearch" class="searchBox" placeholder="例：キラヤ、卵、ペイディ" oninput="render()">
     <p class="small">メモも履歴に表示します。レシートの中身を忘れそうな時はメモへ。</p>
-    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th><th>メモ</th><th>詳細</th></tr></thead><tbody id="expenseRows"></tbody></table>
+    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th><th>メモ</th><th>操作</th></tr></thead><tbody id="expenseRows"></tbody></table>
   </div>
 </section>
 
@@ -241,12 +244,14 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>入金先</label><select id="inTo"></select>
     <label>金額</label><input id="inAmount" type="number" inputmode="numeric" placeholder="例：107499">
     <label>メモ 任意</label><input id="inMemo">
-    <button onclick="addIncome()">収入を追加</button>
+    <input id="inEditIndex" type="hidden" value="">
+    <button id="inSubmitBtn" onclick="saveIncome()">収入を追加</button>
+    <button id="inCancelBtn" class="secondary" style="display:none" onclick="cancelIncomeEdit()">修正をやめる</button>
     <p class="small">前借りは収入ではなく借入として表示します。</p>
   </div>
   <div class="card">
     <h2>収入履歴</h2>
-    <table><thead><tr><th>日付</th><th>名目</th><th>入金先</th><th class="right">金額</th></tr></thead><tbody id="incomeRows"></tbody></table>
+    <table><thead><tr><th>日付</th><th>名目</th><th>入金先</th><th class="right">金額</th><th>メモ</th><th>操作</th></tr></thead><tbody id="incomeRows"></tbody></table>
   </div>
 </section>
 
@@ -356,7 +361,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 <script>
 const THEORETICAL_LIFE_BUDGET=43500, LIFE_BUDGET=40000, SAVING_OTHER=3500, WEEK_BUDGET=10000;
 const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T23:59:59");
-const lifeCats=["食費","日用品","雑費","ペット費"];
+const lifeCats=["食費","日用品","雑費","ペット費","差額計算","その他"];
 const medicalCats=["病院","薬局","市販薬"];
 const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
 const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
@@ -392,15 +397,57 @@ function goals(){return get("mt_goals",defaultGoals)}
 function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()+((day===0?-6:1)-day));x.setHours(0,0,0,0);return x}
 function sameWeek(a,b){return startWeek(a).getTime()===startWeek(b).getTime()}
 function showScreen(id,btn){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()}
-function addExpense(){
- const item={date:exDate.value,store:exStore.value.trim()||"未記入",category:exCategory.value,pay:exPay.value,amount:Number(exAmount.value),memo:exMemo.value.trim()};
- if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
- const a=expenses();a.push(item);set("mt_expenses",a);exAmount.value="";exMemo.value="";render()
+function expenseFormItem(){
+ return {date:exDate.value,store:exStore.value.trim()||"未記入",category:exCategory.value,pay:exPay.value,amount:Number(exAmount.value),memo:exMemo.value.trim()};
 }
-function addIncome(){
- const item={date:inDate.value,type:inType.value,to:inTo.value,amount:Number(inAmount.value),memo:inMemo.value.trim()};
+function clearExpenseForm(){
+ exEditIndex.value=""; exStore.value=""; exAmount.value=""; exMemo.value=""; exDate.value=todayISO();
+ exSubmitBtn.textContent="支出を追加"; exCancelBtn.style.display="none";
+}
+function saveExpense(){
+ const item=expenseFormItem();
  if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
- const a=incomes();a.push(item);set("mt_incomes",a);inAmount.value="";inMemo.value="";render()
+ const a=expenses();
+ const idx=exEditIndex.value==="" ? -1 : Number(exEditIndex.value);
+ if(idx>=0 && a[idx]){ a[idx]=item; } else { a.push(item); }
+ set("mt_expenses",a); clearExpenseForm(); render();
+}
+function startExpenseEdit(index){
+ const e=expenses()[index]; if(!e){alert("データが見つかりません");return}
+ exEditIndex.value=index; exDate.value=e.date||todayISO(); exStore.value=e.store||""; exCategory.value=e.category||"食費"; exPay.value=e.pay||"現金"; exAmount.value=e.amount||""; exMemo.value=e.memo||"";
+ exSubmitBtn.textContent="支出の修正を保存"; exCancelBtn.style.display="block";
+ window.scrollTo({top:document.getElementById("expense").offsetTop,behavior:"smooth"});
+}
+function cancelExpenseEdit(){ clearExpenseForm(); }
+function deleteExpense(index){
+ const a=expenses(); const e=a[index]; if(!e){alert("データが見つかりません");return}
+ if(confirm((e.date||"")+" "+(e.store||"支出")+" "+yen(e.amount)+" を削除しますか？")){ a.splice(index,1); set("mt_expenses",a); clearExpenseForm(); render(); }
+}
+function incomeFormItem(){
+ return {date:inDate.value,type:inType.value,to:inTo.value,amount:Number(inAmount.value),memo:inMemo.value.trim()};
+}
+function clearIncomeForm(){
+ inEditIndex.value=""; inAmount.value=""; inMemo.value=""; inDate.value=todayISO();
+ inSubmitBtn.textContent="収入を追加"; inCancelBtn.style.display="none";
+}
+function saveIncome(){
+ const item=incomeFormItem();
+ if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
+ const a=incomes();
+ const idx=inEditIndex.value==="" ? -1 : Number(inEditIndex.value);
+ if(idx>=0 && a[idx]){ a[idx]=item; } else { a.push(item); }
+ set("mt_incomes",a); clearIncomeForm(); render();
+}
+function startIncomeEdit(index){
+ const i=incomes()[index]; if(!i){alert("データが見つかりません");return}
+ inEditIndex.value=index; inDate.value=i.date||todayISO(); inType.value=i.type||"その他"; inTo.value=i.to||walletNames[0]; inAmount.value=i.amount||""; inMemo.value=i.memo||"";
+ inSubmitBtn.textContent="収入の修正を保存"; inCancelBtn.style.display="block";
+ window.scrollTo({top:document.getElementById("income").offsetTop,behavior:"smooth"});
+}
+function cancelIncomeEdit(){ clearIncomeForm(); }
+function deleteIncome(index){
+ const a=incomes(); const i=a[index]; if(!i){alert("データが見つかりません");return}
+ if(confirm((i.date||"")+" "+(i.type||"収入")+" "+yen(i.amount)+" を削除しますか？")){ a.splice(index,1); set("mt_incomes",a); clearIncomeForm(); render(); }
 }
 function addMove(){
  const item={date:mvDate.value,from:mvFrom.value,to:mvTo.value,amount:Number(mvAmount.value)};
@@ -559,10 +606,12 @@ function render(){
      +"<td>"+safeCell(e.pay)+"</td>"
      +"<td class='right'>"+yen(e.amount)+"</td>"
      +"<td>"+safeCell(e.memo || "")+"</td>"
-     +"<td><button class='miniBtn' onclick='showExpenseDetail("+e._i+")'>見る</button></td>"
+     +"<td><button class='miniBtn' onclick='showExpenseDetail("+e._i+")'>見る</button> "
+     +"<button class='miniBtn' onclick='startExpenseEdit("+e._i+")'>修正</button> "
+     +"<button class='miniBtn' onclick='deleteExpense("+e._i+")'>削除</button></td>"
      +"</tr>")
    .join("");
- incomeRows.innerHTML=inc.slice().reverse().map(i=>`<tr><td>${i.date}</td><td>${i.type}</td><td>${i.to}</td><td class="right">${yen(i.amount)}</td></tr>`).join("");
+ incomeRows.innerHTML=inc.map((i,index)=>({...i,_i:index})).slice().reverse().map(i=>`<tr><td>${safeCell(i.date)}</td><td>${safeCell(i.type)}</td><td>${safeCell(i.to)}</td><td class="right">${yen(i.amount)}</td><td>${safeCell(i.memo||"")}</td><td><button class="miniBtn" onclick="startIncomeEdit(${i._i})">修正</button> <button class="miniBtn" onclick="deleteIncome(${i._i})">削除</button></td></tr>`).join("");
  walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
  categorySummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
  medicalSummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>medicalCats.includes(e.category)));
@@ -594,7 +643,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.3", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.5-beta-3", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
