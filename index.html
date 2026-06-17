@@ -851,5 +851,127 @@ function addCalendarEvent(date, title) {
   window.open(url, '_blank');
 }
 </script>
+  <section class="anshin-box">
+  <h2>見通し帳の安心材料</h2>
+  <p class="anshin-short">
+    固定費は守れている。<br>
+    Oliveだけで判断しない。焦って先払いしない。週単位で考える。<br>
+    私は今、仕組みで守る運用をしている。
+  </p>
+
+  <button onclick="toggleAnshin()">安心材料を確認する</button>
+
+  <div id="anshinDetail" style="display:none;">
+    <h3>現在できていること</h3>
+    <ul>
+      <li>ゆうちょに固定費2か月分を確保済み</li>
+      <li>引落予定を把握している</li>
+      <li>Googleカレンダーに登録し始めた</li>
+      <li>生活費上限を決めている</li>
+      <li>医療費補助30,000円の予定がある</li>
+      <li>以前のような「何がいつ引かれるか分からない状態」ではない</li>
+    </ul>
+
+    <h3>今の不安の正体</h3>
+    <ul>
+      <li>「本当に足りるか？」という数字の不安</li>
+      <li>「Oliveに十分なお金がない」という感覚的な不安</li>
+      <li>医療費がまだ確定していない不安</li>
+    </ul>
+
+    <h3>気を付けたい思い込み</h3>
+    <ul>
+      <li>「Oliveに10万円以上ないと危険」</li>
+      <li>「ゆうちょに入れた固定費は、ないものとして考える」</li>
+    </ul>
+
+    <p>
+      実際は、ゆうちょの固定費は「既に守れているお金」。<br>
+      固定費2か月分確保は大きな安全資産。
+    </p>
+
+    <h3>Paidyについて</h3>
+    <ul>
+      <li>金額：13,008円</li>
+      <li>支払期間：7/1～7/27</li>
+      <li>急いで払う必要はない</li>
+      <li>医療費の見通しが立ってから払う方が合理的</li>
+    </ul>
+
+    <h3>Oliveについて</h3>
+    <ul>
+      <li>19日・23日の支払いに一時利用は可</li>
+      <li>「使ったら必ずすぐ返す」に縛られすぎない</li>
+      <li>来月の医療費確保を優先してよい</li>
+    </ul>
+
+    <h3>現時点の優先順位</h3>
+    <ol>
+      <li>19日・23日の支払いを乗り切る</li>
+      <li>25日の医療費補助30,000円を受け取る</li>
+      <li>来月の医療費予備を確保する</li>
+      <li>7月中旬に残高確認</li>
+      <li>7/20前後にPaidy13,008円を支払う</li>
+    </ol>
+
+    <h3>客観的な評価</h3>
+    <ul>
+      <li>赤信号ではない</li>
+      <li>黄色信号くらい</li>
+      <li>最大の不確定要素は医療費</li>
+      <li>固定費については既にかなり改善されている</li>
+    </ul>
+
+    <h3>一番大事なこと</h3>
+    <p>
+      Olive残高だけで安全性を判断しない。<br>
+      ゆうちょの固定費確保も含めて家計全体を見る。
+    </p>
+
+    <p>
+      私は今、<br>
+      「残高だけで生き延びる運用」から、<br>
+      「先に固定費を確保して仕組みで守る運用」へ移行している。
+    </p>
+  </div>
+</section>
+
+<style>
+.anshin-box {
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff8d8;
+  border: 2px solid #f1d36b;
+  line-height: 1.7;
+}
+
+.anshin-box h2 {
+  margin-top: 0;
+}
+
+.anshin-short {
+  font-weight: 600;
+}
+
+.anshin-box button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #f1c84b;
+  font-weight: 700;
+}
+
+#anshinDetail {
+  margin-top: 16px;
+}
+</style>
+
+<script>
+function toggleAnshin() {
+  const detail = document.getElementById('anshinDetail');
+  detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 </body>
 </html>
