@@ -824,5 +824,32 @@ document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
 render();
 </script>
+<button onclick="addCalendarEvent('20260727', 'Paidy 引落 14,974円')">
+  PaidyをGoogleカレンダーに登録
+</button>
+
+<script>
+function addCalendarEvent(date, title) {
+  // 終日予定：終了日は翌日にする
+  const y = Number(date.slice(0, 4));
+  const m = Number(date.slice(4, 6)) - 1;
+  const d = Number(date.slice(6, 8));
+  const end = new Date(y, m, d + 1);
+
+  const endDate =
+    end.getFullYear().toString() +
+    String(end.getMonth() + 1).padStart(2, '0') +
+    String(end.getDate()).padStart(2, '0');
+
+  const url =
+    'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent(title) +
+    '&dates=' + date + '/' + endDate +
+    '&details=' + encodeURIComponent('みまもり帳から登録。前日通知を設定してね。') +
+    '&ctz=Asia/Tokyo';
+
+  window.open(url, '_blank');
+}
+</script>
 </body>
 </html>
