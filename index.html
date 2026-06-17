@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.5 beta-3</title>
+<title>みゃみゃの見通し帳 ver.1.6 beta-4</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -54,11 +54,44 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
 .miniBtn{padding:5px 8px;font-size:12px;border-radius:8px;margin:0;background:#eef5f8;color:#222;border:1px solid #d7e8ef}
 .searchBox{margin-bottom:10px}
+.calBtn{
+  padding:8px 10px;
+  font-size:13px;
+  border-radius:10px;
+  margin:4px 0 0;
+  background:#222;
+  color:#fff;
+}
+.calNote{
+  font-size:12px;
+  color:#666;
+  margin-top:4px;
+}
+.anshin-box {
+  margin: 12px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff8d8;
+  border: 2px solid #f1d36b;
+  line-height: 1.7;
+}
+.anshin-box h2 { margin-top: 0; }
+.anshin-short { font-weight: 600; }
+.anshin-box button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #f1c84b;
+  color:#222;
+  font-weight: 700;
+}
+#anshinDetail { margin-top: 16px; }
+
 </style>
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.5 beta-3</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-4</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -195,6 +228,97 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <h2>次の予定</h2>
     <div id="upcoming"></div>
   </div>
+  <section class="anshin-box">
+    <h2>見通し帳の安心材料</h2>
+    <p class="anshin-short">
+      固定費は守れている。<br>
+      Oliveだけで判断しない。焦って先払いしない。週単位で考える。<br>
+      私は今、仕組みで守る運用をしている。
+    </p>
+
+    <button onclick="toggleAnshin()">安心材料を確認する</button>
+
+    <div id="anshinDetail" style="display:none;">
+      <h3>現在できていること</h3>
+      <ul>
+        <li>ゆうちょに固定費2か月分を確保済み</li>
+        <li>引落予定を把握している</li>
+        <li>Googleカレンダーに登録し始めた</li>
+        <li>生活費上限を決めている</li>
+        <li>医療費補助30,000円の予定がある</li>
+        <li>以前のような「何がいつ引かれるか分からない状態」ではない</li>
+      </ul>
+
+      <h3>今の不安の正体</h3>
+      <ul>
+        <li>「本当に足りるか？」という数字の不安</li>
+        <li>「Oliveに十分なお金がない」という感覚的な不安</li>
+        <li>医療費がまだ確定していない不安</li>
+      </ul>
+
+      <h3>気を付けたい思い込み</h3>
+      <ul>
+        <li>「Oliveに10万円以上ないと危険」</li>
+        <li>「ゆうちょに入れた固定費は、ないものとして考える」</li>
+      </ul>
+
+      <p>
+        実際は、ゆうちょの固定費は「既に守れているお金」。<br>
+        固定費2か月分確保は大きな安全資産。
+      </p>
+
+      <h3>Paidyについて</h3>
+      <ul>
+        <li>金額：13,008円</li>
+        <li>支払期間：7/1～7/27</li>
+        <li>急いで払う必要はない</li>
+        <li>医療費の見通しが立ってから払う方が合理的</li>
+      </ul>
+
+      <h3>Oliveについて</h3>
+      <ul>
+        <li>19日・23日の支払いに一時利用は可</li>
+        <li>「使ったら必ずすぐ返す」に縛られすぎない</li>
+        <li>来月の医療費確保を優先してよい</li>
+      </ul>
+
+      <h3>現時点の優先順位</h3>
+      <ol>
+        <li>19日・23日の支払いを乗り切る</li>
+        <li>25日の医療費補助30,000円を受け取る</li>
+        <li>来月の医療費予備を確保する</li>
+        <li>7月中旬に残高確認</li>
+        <li>7/20前後にPaidy13,008円を支払う</li>
+      </ol>
+
+      <h3>客観的な評価</h3>
+      <ul>
+        <li>赤信号ではない</li>
+        <li>黄色信号くらい</li>
+        <li>最大の不確定要素は医療費</li>
+        <li>固定費については既にかなり改善されている</li>
+      </ul>
+
+      <h3>一番大事なこと</h3>
+      <p>
+        Olive残高だけで安全性を判断しない。<br>
+        ゆうちょの固定費確保も含めて家計全体を見る。
+      </p>
+
+      <p>
+        私は今、<br>
+        「残高だけで生き延びる運用」から、<br>
+        「先に固定費を確保して仕組みで守る運用」へ移行している。
+      </p>
+    </div>
+  </section>
+
+  <div class="card">
+    <h2>📅 Googleカレンダー登録</h2>
+    <p class="small">バナナ色＝支払い、バジル色＝病院、ピーコック色＝おやたか。色はGoogleカレンダー側で選んでね。</p>
+    <div id="homeCalendarButtons"></div>
+  </div>
+
 </section>
 
 <section id="expense" class="screen">
@@ -368,6 +492,20 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <p class="small">通知はGoogleカレンダー側で「前日」「当日朝」を設定するのがおすすめ。</p>
     <div id="calendarList"></div>
   </div>
+  <div class="card">
+    <h2>Googleカレンダー 任意予定</h2>
+    <p class="small">病院はバジル、おやたか予定はピーコックで登録する用。色はカレンダー側で選んでね。</p>
+    <label>日付</label><input id="customCalDate" type="date">
+    <label>予定名</label><input id="customCalTitle" placeholder="例：病院、精神科、おやたかと予定">
+    <label>種類</label>
+    <select id="customCalType">
+      <option value="バナナ">支払い・締切（バナナ）</option>
+      <option value="バジル">病院・体調（バジル）</option>
+      <option value="ピーコック">おやたか・二人の予定（ピーコック）</option>
+    </select>
+    <button onclick="addCustomCalendarEvent()">任意予定をGoogleカレンダーに登録</button>
+  </div>
+
 
   <div class="card">
     <h2>固定費・予定</h2>
@@ -410,7 +548,7 @@ const bills=[
  {date:"2026-07-26",name:"スマホ関連",amount:30500,type:"fixed"},
  {date:"2026-07-26",name:"スマホ差額 7月",amount:6500,type:"fixed"},
  {date:"2026-07-28",name:"ガス電気",amount:10000,type:"fixed"},
- {date:"2026-07-27",name:"ペイディ後払い",amount:14974,type:"fixed"},
+ {date:"2026-07-20",name:"ペイディ支払い推奨日（期限7/27）",amount:13008,type:"fixed"},
  {date:"2026-08-02",name:"保険",amount:1500,type:"fixed"},
  {date:"2026-11-12",name:"PicsArt 年払い",amount:6600,type:"fixed"}
 ];
@@ -617,6 +755,49 @@ function daysUntil(dateStr){
  return Math.round((d-today)/86400000);
 }
 
+function calendarColorHint(b){
+  if(!b)return "バナナ";
+  if((b.name||"").includes("病院") || (b.name||"").includes("医費")) return "バジル";
+  if((b.name||"").includes("おやたか")) return "ピーコック";
+  return b.type==="income" ? "バジル" : "バナナ";
+}
+function addCalendarEvent(date, title, details){
+  if(!date || !title){alert("日付と予定名を確認してね");return}
+  const compact=date.replaceAll("-","");
+  const y=Number(compact.slice(0,4));
+  const m=Number(compact.slice(4,6))-1;
+  const d=Number(compact.slice(6,8));
+  const end=new Date(y,m,d+1);
+  const endDate=end.getFullYear().toString()+String(end.getMonth()+1).padStart(2,"0")+String(end.getDate()).padStart(2,"0");
+  const url="https://calendar.google.com/calendar/render?action=TEMPLATE"
+    +"&text="+encodeURIComponent(title)
+    +"&dates="+compact+"/"+endDate
+    +"&details="+encodeURIComponent(details || "見通し帳から登録。通知と色をGoogleカレンダー側で確認してね。")
+    +"&ctz=Asia/Tokyo";
+  window.open(url,"_blank");
+}
+function addBillCalendarEvent(index){
+  const b=bills[index];
+  if(!b){alert("予定が見つかりません");return}
+  const sign=b.type==="income" ? "入金予定" : "支払い予定";
+  const color=calendarColorHint(b);
+  const title=b.name+" "+yen(b.amount);
+  const details="見通し帳から登録。種類："+sign+"。推奨カラー："+color+"。通知は前日と当日朝がおすすめ。";
+  addCalendarEvent(b.date,title,details);
+}
+function addCustomCalendarEvent(){
+  const date=customCalDate.value;
+  const title=(customCalTitle.value||"").trim();
+  const type=customCalType.value;
+  if(!date || !title){alert("日付と予定名を入れてね");return}
+  addCalendarEvent(date,title,"見通し帳から登録。推奨カラー："+type+"。通知は必要に応じて設定してね。");
+}
+function toggleAnshin(){
+  const detail=document.getElementById("anshinDetail");
+  if(!detail)return;
+  detail.style.display = detail.style.display === "none" ? "block" : "none";
+}
+
 function fixedTotalForMonth(monthNumber){
   return bills
     .filter(b => b.type==="fixed" && (new Date(b.date+"T00:00:00").getMonth()+1)===monthNumber)
@@ -744,7 +925,13 @@ function render(){
  paySummary.innerHTML=rowsFromObj(payObj);
  storeSummary.innerHTML=rowsFromObj(sumBy(ex,"store"));
  billRows.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong>${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("");
- calendarList.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><span>${b.type==='income'?'入金予定':'引き落とし予定'} ${yen(b.amount)}</span></div>`).join("");
+ calendarList.innerHTML=bills.map((b,i)=>`<div class="row"><span>${b.date} ${safeCell(b.name)}<div class="calNote">推奨色：${calendarColorHint(b)}</div></span><span>${b.type==='income'?'入金予定':'支払い予定'} ${yen(b.amount)}<button class="calBtn" onclick="addBillCalendarEvent(${i})">カレンダー登録</button></span></div>`).join("");
+ if(document.getElementById("homeCalendarButtons")){
+   homeCalendarButtons.innerHTML=bills.filter(b=>daysUntil(b.date)>=0 && daysUntil(b.date)<=45).map(b=>{
+     const i=bills.indexOf(b);
+     return `<button class="calBtn" onclick="addBillCalendarEvent(${i})">${safeCell(b.date)} ${safeCell(b.name)}を登録</button>`;
+   }).join("") || "<p class='small'>45日以内の予定なし</p>";
+ }
  if(document.getElementById("lastBackupHome")){lastBackupHome.textContent=localStorage.getItem("mt_last_backup")||"未実施";}
  
  const moveQ=(document.getElementById("moveSearch")?.value || "").toLowerCase();
@@ -769,7 +956,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.6-beta-1", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.6-beta-4", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -823,155 +1010,6 @@ function resetAll(){if(confirm("全部消します。よろしいですか？"))
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
 render();
-</script>
-<button onclick="addCalendarEvent('20260727', 'Paidy 引落 14,974円')">
-  PaidyをGoogleカレンダーに登録
-</button>
-
-<script>
-function addCalendarEvent(date, title) {
-  // 終日予定：終了日は翌日にする
-  const y = Number(date.slice(0, 4));
-  const m = Number(date.slice(4, 6)) - 1;
-  const d = Number(date.slice(6, 8));
-  const end = new Date(y, m, d + 1);
-
-  const endDate =
-    end.getFullYear().toString() +
-    String(end.getMonth() + 1).padStart(2, '0') +
-    String(end.getDate()).padStart(2, '0');
-
-  const url =
-    'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-    '&text=' + encodeURIComponent(title) +
-    '&dates=' + date + '/' + endDate +
-    '&details=' + encodeURIComponent('みまもり帳から登録。前日通知を設定してね。') +
-    '&ctz=Asia/Tokyo';
-
-  window.open(url, '_blank');
-}
-</script>
-  <section class="anshin-box">
-  <h2>見通し帳の安心材料</h2>
-  <p class="anshin-short">
-    固定費は守れている。<br>
-    Oliveだけで判断しない。焦って先払いしない。週単位で考える。<br>
-    私は今、仕組みで守る運用をしている。
-  </p>
-
-  <button onclick="toggleAnshin()">安心材料を確認する</button>
-
-  <div id="anshinDetail" style="display:none;">
-    <h3>現在できていること</h3>
-    <ul>
-      <li>ゆうちょに固定費2か月分を確保済み</li>
-      <li>引落予定を把握している</li>
-      <li>Googleカレンダーに登録し始めた</li>
-      <li>生活費上限を決めている</li>
-      <li>医療費補助30,000円の予定がある</li>
-      <li>以前のような「何がいつ引かれるか分からない状態」ではない</li>
-    </ul>
-
-    <h3>今の不安の正体</h3>
-    <ul>
-      <li>「本当に足りるか？」という数字の不安</li>
-      <li>「Oliveに十分なお金がない」という感覚的な不安</li>
-      <li>医療費がまだ確定していない不安</li>
-    </ul>
-
-    <h3>気を付けたい思い込み</h3>
-    <ul>
-      <li>「Oliveに10万円以上ないと危険」</li>
-      <li>「ゆうちょに入れた固定費は、ないものとして考える」</li>
-    </ul>
-
-    <p>
-      実際は、ゆうちょの固定費は「既に守れているお金」。<br>
-      固定費2か月分確保は大きな安全資産。
-    </p>
-
-    <h3>Paidyについて</h3>
-    <ul>
-      <li>金額：13,008円</li>
-      <li>支払期間：7/1～7/27</li>
-      <li>急いで払う必要はない</li>
-      <li>医療費の見通しが立ってから払う方が合理的</li>
-    </ul>
-
-    <h3>Oliveについて</h3>
-    <ul>
-      <li>19日・23日の支払いに一時利用は可</li>
-      <li>「使ったら必ずすぐ返す」に縛られすぎない</li>
-      <li>来月の医療費確保を優先してよい</li>
-    </ul>
-
-    <h3>現時点の優先順位</h3>
-    <ol>
-      <li>19日・23日の支払いを乗り切る</li>
-      <li>25日の医療費補助30,000円を受け取る</li>
-      <li>来月の医療費予備を確保する</li>
-      <li>7月中旬に残高確認</li>
-      <li>7/20前後にPaidy13,008円を支払う</li>
-    </ol>
-
-    <h3>客観的な評価</h3>
-    <ul>
-      <li>赤信号ではない</li>
-      <li>黄色信号くらい</li>
-      <li>最大の不確定要素は医療費</li>
-      <li>固定費については既にかなり改善されている</li>
-    </ul>
-
-    <h3>一番大事なこと</h3>
-    <p>
-      Olive残高だけで安全性を判断しない。<br>
-      ゆうちょの固定費確保も含めて家計全体を見る。
-    </p>
-
-    <p>
-      私は今、<br>
-      「残高だけで生き延びる運用」から、<br>
-      「先に固定費を確保して仕組みで守る運用」へ移行している。
-    </p>
-  </div>
-</section>
-
-<style>
-.anshin-box {
-  margin: 20px 0;
-  padding: 16px;
-  border-radius: 16px;
-  background: #fff8d8;
-  border: 2px solid #f1d36b;
-  line-height: 1.7;
-}
-
-.anshin-box h2 {
-  margin-top: 0;
-}
-
-.anshin-short {
-  font-weight: 600;
-}
-
-.anshin-box button {
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  background: #f1c84b;
-  font-weight: 700;
-}
-
-#anshinDetail {
-  margin-top: 16px;
-}
-</style>
-
-<script>
-function toggleAnshin() {
-  const detail = document.getElementById('anshinDetail');
-  detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
-}
 </script>
 </body>
 </html>
