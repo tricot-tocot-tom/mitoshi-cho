@@ -284,6 +284,30 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <button onclick="addMove()">移動を記録</button>
   </div>
 
+  <div class="card warnBox">
+    <h2>残高調整 実残高に合わせる</h2>
+    <p class="small">支出・収入ではなく、帳簿と実残高のズレだけを直す欄。カテゴリ累計には混ぜません。</p>
+    <label>日付</label><input id="adjDate" type="date">
+    <label>置き場</label><select id="adjWallet" onchange="previewAdjustment()"></select>
+    <div class="row"><span>計算上の残高</span><strong id="adjCurrent">--</strong></div>
+    <label>実残高 数えた金額</label><input id="adjReal" type="number" inputmode="numeric" oninput="previewAdjustment()" placeholder="例：8500">
+    <div class="row"><span>発生する差額</span><strong id="adjDiff">--</strong></div>
+    <label>差額理由</label>
+    <select id="adjReason">
+      <option>入力漏れ</option><option>引落額差異</option><option>現金不明</option><option>返金</option>
+      <option>ポイント利用</option><option>振込手数料</option><option>記録ミス</option><option>その他</option>
+    </select>
+    <label>メモ 任意</label><input id="adjMemo" placeholder="例：財布を数え直した、Paidy確定差額">
+    <button onclick="saveAdjustmentFromReal()">実残高に合わせる</button>
+  </div>
+
+  <div class="card">
+    <h2>残高調整履歴</h2>
+    <button class="secondary" onclick="migrateDiffCategoryAll()">差額計算カテゴリをまとめて調整へ移す</button>
+    <p class="small">過去に支出として入れた差額を、支出累計から外して残高調整へ移します。</p>
+    <table><thead><tr><th>日付</th><th>置き場</th><th class="right">差額</th><th>理由</th><th>メモ</th><th>操作</th></tr></thead><tbody id="adjustmentRows"></tbody></table>
+  </div>
+
   <div class="card">
     <h2>資金移動履歴</h2>
     <label>検索 移動元・移動先</label>
@@ -313,6 +337,10 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   <div class="card">
     <h2>支払方法別</h2>
     <div id="paySummary"></div>
+  </div>
+  <div class="card warnBox">
+    <h2>残高調整累計 支出に含めない</h2>
+    <div id="adjustmentSummary"></div>
   </div>
   <div class="card">
     <h2>店別累計</h2>
@@ -361,7 +389,8 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 <script>
 const THEORETICAL_LIFE_BUDGET=43500, LIFE_BUDGET=40000, SAVING_OTHER=3500, WEEK_BUDGET=10000;
 const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T23:59:59");
-const lifeCats=["食費","日用品","雑費","ペット費","差額計算","その他"];
+const lifeCats=["食費","日用品","雑費","ペット費","その他"];
+const adjustmentCats=["差額計算"];
 const medicalCats=["病院","薬局","市販薬"];
 const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
 const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
@@ -392,6 +421,7 @@ function set(k,v){localStorage.setItem(k,JSON.stringify(v))}
 function expenses(){return get("mt_expenses",[])}
 function incomes(){return get("mt_incomes",[])}
 function moves(){return get("mt_moves",[])}
+function adjustments(){return get("mt_adjustments",[])}
 function initialWallets(){return get("mt_initial_wallets",defaultInitialWallets)}
 function goals(){return get("mt_goals",defaultGoals)}
 function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()+((day===0?-6:1)-day));x.setHours(0,0,0,0);return x}
@@ -475,6 +505,95 @@ function showExpenseDetail(index){
   );
 }
 
+
+function expenseWallet(e){
+  if(e.pay==="現金"){
+    if(e.category==="市販薬") return "財布3 市販薬";
+    return "財布1 生活";
+  }
+  if(e.pay==="七瀬デビット") return "八十二 七瀬 生活メイン";
+  if(e.pay==="ゆうちょデビット") return "ゆうちょ 固定費";
+  if(e.pay==="Oliveデビット") return "Olive 来月keep";
+  return "財布1 生活";
+}
+function expenseAffectsWallet(e){
+  return ["現金","七瀬デビット","ゆうちょデビット","Oliveデビット"].includes(e.pay);
+}
+function adjustmentLabel(a){
+  return (Number(a.diff)>=0?"+":"") + yen(a.diff);
+}
+function addAdjustment(item){
+  const a=adjustments();
+  a.push(item);
+  set("mt_adjustments",a);
+}
+function moveExpenseToAdjustment(index){
+  const ex=expenses();
+  const e=ex[index];
+  if(!e){alert("データが見つかりません");return}
+  const wallet=expenseWallet(e);
+  const diff=expenseAffectsWallet(e) ? -Number(e.amount) : 0;
+  if(!confirm((e.date||"")+" "+(e.store||"支出")+" "+yen(e.amount)+" を支出累計から外し、残高調整へ移しますか？"))return;
+  ex.splice(index,1);
+  set("mt_expenses",ex);
+  addAdjustment({date:e.date||todayISO(),wallet,diff,reason:"支出から移行",memo:(e.store||"")+" / "+(e.category||"")+" / "+(e.memo||"")});
+  clearExpenseForm();
+  render();
+}
+function migrateDiffCategoryAll(){
+  const ex=expenses();
+  const targets=ex.map((e,i)=>({...e,_i:i})).filter(e=>e.category==="差額計算");
+  if(!targets.length){alert("差額計算カテゴリの支出は見つかりません");return}
+  if(!confirm(targets.length+"件の差額計算カテゴリを、支出累計から外して残高調整へ移しますか？"))return;
+  const remain=[];
+  const adj=adjustments();
+  ex.forEach(e=>{
+    if(e.category==="差額計算"){
+      adj.push({date:e.date||todayISO(),wallet:expenseWallet(e),diff:expenseAffectsWallet(e)?-Number(e.amount):0,reason:"差額計算カテゴリ移行",memo:(e.store||"")+" / "+(e.pay||"")+" / "+(e.memo||"")});
+    }else{remain.push(e);}
+  });
+  set("mt_expenses",remain);
+  set("mt_adjustments",adj);
+  clearExpenseForm();
+  render();
+  alert("移行しました。カテゴリ累計から差額計算分を外しました。");
+}
+function deleteAdjustment(index){
+  const a=adjustments(); const x=a[index]; if(!x){alert("データが見つかりません");return}
+  if(confirm((x.date||"")+" "+(x.wallet||"")+" "+adjustmentLabel(x)+" の調整を削除しますか？")){a.splice(index,1);set("mt_adjustments",a);render();}
+}
+function adjustmentToExpense(index){
+  const a=adjustments(); const x=a[index]; if(!x){alert("データが見つかりません");return}
+  const amt=Math.abs(Number(x.diff)||0);
+  if(!amt){alert("金額0円の調整は支出へ戻せません");return}
+  if(!confirm("この残高調整を支出へ戻しますか？"))return;
+  const pay=x.wallet==="八十二 七瀬 生活メイン"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
+  const cat=x.wallet==="財布3 市販薬"?"市販薬":"その他";
+  const ex=expenses();
+  ex.push({date:x.date||todayISO(),store:"残高調整から戻し",category:cat,pay,amount:amt,memo:(x.reason||"")+" / "+(x.memo||"")});
+  a.splice(index,1);
+  set("mt_expenses",ex); set("mt_adjustments",a); render();
+}
+function previewAdjustment(){
+  if(!document.getElementById("adjWallet"))return;
+  const wallets=calcWallets();
+  const w=adjWallet.value;
+  const current=Number(wallets[w]||0);
+  adjCurrent.textContent=yen(current);
+  const real=adjReal.value===""?null:Number(adjReal.value);
+  adjDiff.textContent=real===null?"--":adjustmentLabel({diff:real-current});
+}
+function saveAdjustmentFromReal(){
+  const w=adjWallet.value;
+  const real=Number(adjReal.value);
+  if(!adjDate.value||adjReal.value===""){alert("日付と実残高を入れてね");return}
+  const current=Number(calcWallets()[w]||0);
+  const diff=real-current;
+  addAdjustment({date:adjDate.value,wallet:w,current,real,diff,reason:adjReason.value,memo:adjMemo.value.trim()});
+  adjReal.value=""; adjMemo.value="";
+  render();
+}
+
 function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
 function calcWallets(){
  let w={...initialWallets()};
@@ -482,13 +601,14 @@ function calcWallets(){
  moves().forEach(m=>{w[m.from]=(w[m.from]||0)-Number(m.amount);w[m.to]=(w[m.to]||0)+Number(m.amount)});
  expenses().forEach(e=>{
    if(e.pay==="現金"){
-     if(lifeCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
+     if(lifeCats.includes(e.category) || adjustmentCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
      else if(e.category==="市販薬") w["財布3 市販薬"]-=Number(e.amount);
    }
    if(e.pay==="七瀬デビット") w["八十二 七瀬 生活メイン"]-=Number(e.amount);
    if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
    if(e.pay==="Oliveデビット") w["Olive 来月keep"]-=Number(e.amount);
  });
+ adjustments().forEach(a=>{w[a.wallet]=(w[a.wallet]||0)+Number(a.diff)});
  return w;
 }
 function daysUntil(dateStr){
@@ -530,7 +650,8 @@ function renderAdvice(lifeRemain,weekRemain,medicalTotal,payObj,wallets,petUsed,
 function renderSettings(){
  const iw=initialWallets();
  initialBalanceInputs.innerHTML=walletNames.map(n=>`<label>${n}</label><input class="initialInput" data-wallet="${n}" type="number" inputmode="numeric" value="${iw[n]||0}">`).join("");
- settingPetGoal.value=goals().petGoal;
+ if(document.getElementById("settingPetGoal")) settingPetGoal.value=goals().petGoal;
+ previewAdjustment();
 }
 function saveInitialBalances(){
  let obj={};
@@ -608,12 +729,17 @@ function render(){
      +"<td>"+safeCell(e.memo || "")+"</td>"
      +"<td><button class='miniBtn' onclick='showExpenseDetail("+e._i+")'>見る</button> "
      +"<button class='miniBtn' onclick='startExpenseEdit("+e._i+")'>修正</button> "
-     +"<button class='miniBtn' onclick='deleteExpense("+e._i+")'>削除</button></td>"
+     +"<button class='miniBtn' onclick='deleteExpense("+e._i+")'>削除</button> "
+     +"<button class='miniBtn' onclick='moveExpenseToAdjustment("+e._i+")'>調整へ移す</button></td>"
      +"</tr>")
    .join("");
  incomeRows.innerHTML=inc.map((i,index)=>({...i,_i:index})).slice().reverse().map(i=>`<tr><td>${safeCell(i.date)}</td><td>${safeCell(i.type)}</td><td>${safeCell(i.to)}</td><td class="right">${yen(i.amount)}</td><td>${safeCell(i.memo||"")}</td><td><button class="miniBtn" onclick="startIncomeEdit(${i._i})">修正</button> <button class="miniBtn" onclick="deleteIncome(${i._i})">削除</button></td></tr>`).join("");
  walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
+ if(document.getElementById("adjustmentRows")){
+   adjustmentRows.innerHTML=adjustments().map((a,index)=>({...a,_i:index})).slice().reverse().map(a=>`<tr><td>${safeCell(a.date)}</td><td>${safeCell(a.wallet)}</td><td class="right">${adjustmentLabel(a)}</td><td>${safeCell(a.reason||"")}</td><td>${safeCell(a.memo||"")}</td><td><button class="miniBtn" onclick="adjustmentToExpense(${a._i})">支出へ戻す</button> <button class="miniBtn" onclick="deleteAdjustment(${a._i})">削除</button></td></tr>`).join("") || "<tr><td colspan='6'>まだ調整なし</td></tr>";
+ }
  categorySummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
+ if(document.getElementById("adjustmentSummary")){adjustmentSummary.innerHTML=rowsFromObj(sumBy(adjustments(),"reason"));}
  medicalSummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>medicalCats.includes(e.category)));
  paySummary.innerHTML=rowsFromObj(payObj);
  storeSummary.innerHTML=rowsFromObj(sumBy(ex,"store"));
@@ -643,7 +769,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.5-beta-3", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.6-beta-1", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -668,6 +794,7 @@ function importBackupObject(d){
  if(d.expenses)set("mt_expenses",d.expenses);
  if(d.incomes)set("mt_incomes",d.incomes);
  if(d.moves)set("mt_moves",d.moves);
+ if(d.adjustments)set("mt_adjustments",d.adjustments);
  if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
  if(d.goals)set("mt_goals",d.goals);
  render();
@@ -692,9 +819,9 @@ function importBackupFile(event){
  reader.readAsText(file);
 }
 
-function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
+function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_adjustments");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
-walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n));});
+walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
 render();
 </script>
 </body>
