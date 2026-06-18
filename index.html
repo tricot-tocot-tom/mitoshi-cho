@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.6 beta-5</title>
+<title>みゃみゃの見通し帳 ver.1.6 beta-6</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-5</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-6</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -538,9 +538,9 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 <script>
 const THEORETICAL_LIFE_BUDGET=43500, LIFE_BUDGET=40000, SAVING_OTHER=3500, WEEK_BUDGET=10000;
 const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T23:59:59");
-const lifeCats=["食費","日用品","雑費","ペット費","その他"];
+const lifeCats=["食費","日用品","雑費","交際費","ペット費","その他"];
 const adjustmentCats=["差額計算"];
-const medicalCats=["精神科","内科","整形外科","その他医療"];
+const medicalCats=["精神科","内科","整形外科","その他医療","医療費"];
 const otcCats=["市販薬"];
 const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 今週の限度額","八十二 南長野 月の限度額","Olive 来月keep"];
 const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 今週の限度額":818,"八十二 南長野 月の限度額":289,"Olive 来月keep":0};
@@ -982,7 +982,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.6-beta-5", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.6-beta-6", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
