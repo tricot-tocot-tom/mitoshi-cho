@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.6 beta-4 </title>
+<title>みゃみゃの見通し帳 ver.1.6 beta-4</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -329,7 +329,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>カテゴリ</label>
     <select id="exCategory">
       <optgroup label="生活40,000円枠">
-        <option>食費</option><option>日用品</option><option>雑費</option><option>ペット費</option>
+        <option>食費</option><option>日用品</option><option>雑費</option><option>交際費</option><option>ペット費</option>
         <option>差額計算</option><option>その他</option>
       </optgroup>
       <optgroup label="医費 別累計">
@@ -405,6 +405,14 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>移動元</label><select id="mvFrom"></select>
     <label>移動先</label><select id="mvTo"></select>
     <label>金額</label><input id="mvAmount" type="number" inputmode="numeric">
+    <label>カテゴリ</label>
+    <select id="mvCategory">
+      <option>生活費</option>
+      <option>ペット費</option>
+      <option>医療費</option>
+      <option>固定費</option>
+      <option>その他</option>
+    </select>
     <button onclick="addMove()">移動を記録</button>
   </div>
 
@@ -436,7 +444,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <h2>資金移動履歴</h2>
     <label>検索 移動元・移動先</label>
     <input id="moveSearch" class="searchBox" placeholder="例：七瀬、ゆうちょ、財布1" oninput="render()">
-    <table><thead><tr><th>日付</th><th>移動元</th><th>移動先</th><th class="right">金額</th></tr></thead><tbody id="moveRows"></tbody></table>
+    <table><thead><tr><th>日付</th><th>移動元</th><th>移動先</th><th>カテゴリ</th><th class="right">金額</th></tr></thead><tbody id="moveRows"></tbody></table>
   </div>
 
   <div class="card">
@@ -618,7 +626,7 @@ function deleteIncome(index){
  if(confirm((i.date||"")+" "+(i.type||"収入")+" "+yen(i.amount)+" を削除しますか？")){ a.splice(index,1); set("mt_incomes",a); clearIncomeForm(); render(); }
 }
 function addMove(){
- const item={date:mvDate.value,from:mvFrom.value,to:mvTo.value,amount:Number(mvAmount.value)};
+ const item={date:mvDate.value,from:mvFrom.value,to:mvTo.value,amount:Number(mvAmount.value),category:(mvCategory?mvCategory.value:"その他")};
  if(!item.date||!item.amount||item.from===item.to){alert("日付・金額・移動先を確認してね");return}
  const a=moves();a.push(item);set("mt_moves",a);mvAmount.value="";render()
 }
@@ -1011,6 +1019,5 @@ document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
 render();
 </script>
-  <!-- beta-4 update -->
 </body>
 </html>
