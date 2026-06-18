@@ -388,7 +388,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <div class="row"><span>🟦 七瀬前線基地</span><strong>今週生活費</strong></div>
     <p class="small">任務：1週間分の生活費、デビット利用、日常運用。使うのは基本ここ。</p>
     <div class="row"><span>💵 財布部隊</span><strong>現金優先</strong></div>
-    <p class="small">優先順：財布1 → 財布3 → スマホポケット → ゆうちょ → 七瀬。デビットは温存。</p>
+    <p class="small">優先順：財布1 → 財布4医療費 → 財布3 → スマホポケット → ゆうちょ → 七瀬。デビットは温存。</p>
     <div class="row"><span>🎯 作戦目標</span><strong>南長野 → 七瀬 → 生活</strong></div>
     <p class="small">七瀬に月額全部を置かない。週ごとに補給する。</p>
     <div class="row"><span>🚨 最重要命令</span><strong>補給基地を空にしない</strong></div>
@@ -538,8 +538,8 @@ const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T
 const lifeCats=["食費","日用品","雑費","ペット費","その他"];
 const adjustmentCats=["差額計算"];
 const medicalCats=["病院","薬局","市販薬"];
-const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
-const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
+const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
+const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
 const defaultGoals={petGoal:5000};
 const bills=[
  {date:"2026-06-15",name:"障害年金",amount:107499,type:"income"},
@@ -654,7 +654,7 @@ function showExpenseDetail(index){
 
 function expenseWallet(e){
   if(e.pay==="現金"){
-    if(e.category==="市販薬") return "財布3 市販薬";
+    if(medicalCats.includes(e.category)) return "財布4 医療費";
     return "財布1 生活";
   }
   if(e.pay==="七瀬デビット") return "八十二 七瀬 生活メイン";
@@ -714,7 +714,7 @@ function adjustmentToExpense(index){
   if(!amt){alert("金額0円の調整は支出へ戻せません");return}
   if(!confirm("この残高調整を支出へ戻しますか？"))return;
   const pay=x.wallet==="八十二 七瀬 生活メイン"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
-  const cat=x.wallet==="財布3 市販薬"?"市販薬":"その他";
+  const cat=x.wallet==="財布4 医療費"?"病院":(x.wallet==="財布3 市販薬"?"市販薬":"その他");
   const ex=expenses();
   ex.push({date:x.date||todayISO(),store:"残高調整から戻し",category:cat,pay,amount:amt,memo:(x.reason||"")+" / "+(x.memo||"")});
   a.splice(index,1);
@@ -748,7 +748,7 @@ function calcWallets(){
  expenses().forEach(e=>{
    if(e.pay==="現金"){
      if(lifeCats.includes(e.category) || adjustmentCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
-     else if(e.category==="市販薬") w["財布3 市販薬"]-=Number(e.amount);
+     else if(medicalCats.includes(e.category)) w["財布4 医療費"]-=Number(e.amount);
    }
    if(e.pay==="七瀬デビット") w["八十二 七瀬 生活メイン"]-=Number(e.amount);
    if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
