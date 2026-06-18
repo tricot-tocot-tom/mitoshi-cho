@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.6 beta-6</title>
+<title>みゃみゃの見通し帳 ver.1.6 beta-7</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-6</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-7</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -757,7 +757,16 @@ function saveAdjustmentFromReal(){
   render();
 }
 
-function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
+function rowsFromObj(o){return Object.entries(o).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${adjustmentLabel({diff:v})}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
+function yenRowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
+function sumAdjustmentsByReason(){
+  const base={"現金不明":0,"入力漏れ":0,"その他":0,"振込手数料":0};
+  adjustments().forEach(a=>{
+    const r=(a.reason||"その他").trim() || "その他";
+    base[r]=(base[r]||0)+Number(a.diff||0);
+  });
+  return base;
+}
 function calcWallets(){
  let w={...initialWallets()};
  incomes().forEach(i=>{const to=walletAlias(i.to); w[to]=(w[to]||0)+Number(i.amount)});
@@ -945,11 +954,11 @@ function render(){
  if(document.getElementById("adjustmentRows")){
    adjustmentRows.innerHTML=adjustments().map((a,index)=>({...a,_i:index})).slice().reverse().map(a=>`<tr><td>${safeCell(a.date)}</td><td>${safeCell(a.wallet)}</td><td class="right">${adjustmentLabel(a)}</td><td>${safeCell(a.reason||"")}</td><td>${safeCell(a.memo||"")}</td><td><button class="miniBtn" onclick="adjustmentToExpense(${a._i})">支出へ戻す</button> <button class="miniBtn" onclick="deleteAdjustment(${a._i})">削除</button></td></tr>`).join("") || "<tr><td colspan='6'>まだ調整なし</td></tr>";
  }
- categorySummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
- if(document.getElementById("adjustmentSummary")){adjustmentSummary.innerHTML=rowsFromObj(sumBy(adjustments(),"reason"));}
- medicalSummary.innerHTML=rowsFromObj(sumBy(ex,"category",e=>medicalCats.includes(e.category)));
- paySummary.innerHTML=rowsFromObj(payObj);
- storeSummary.innerHTML=rowsFromObj(sumBy(ex,"store"));
+ categorySummary.innerHTML=yenRowsFromObj(sumBy(ex,"category",e=>lifeCats.includes(e.category)));
+ if(document.getElementById("adjustmentSummary")){adjustmentSummary.innerHTML=rowsFromObj(sumAdjustmentsByReason());}
+ medicalSummary.innerHTML=yenRowsFromObj(sumBy(ex,"category",e=>medicalCats.includes(e.category)));
+ paySummary.innerHTML=yenRowsFromObj(payObj);
+ storeSummary.innerHTML=yenRowsFromObj(sumBy(ex,"store"));
  billRows.innerHTML=bills.map(b=>`<div class="row"><span>${b.date} ${b.name}</span><strong>${b.type==='income'?'+':'-'}${yen(b.amount)}</strong></div>`).join("");
  calendarList.innerHTML=bills.map((b,i)=>`<div class="row"><span>${b.date} ${safeCell(b.name)}<div class="calNote">推奨色：${calendarColorHint(b)}</div></span><span>${b.type==='income'?'入金予定':'支払い予定'} ${yen(b.amount)}<button class="calBtn" onclick="addBillCalendarEvent(${i})">カレンダー登録</button></span></div>`).join("");
  if(document.getElementById("homeCalendarButtons")){
@@ -982,7 +991,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.6-beta-6", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.6-beta-7", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
