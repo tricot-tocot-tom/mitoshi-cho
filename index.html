@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.6 beta-4</title>
+<title>みゃみゃの見通し帳 ver.1.6 beta-5</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-4</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.6 beta-5</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -332,8 +332,11 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
         <option>食費</option><option>日用品</option><option>雑費</option><option>交際費</option><option>ペット費</option>
         <option>差額計算</option><option>その他</option>
       </optgroup>
-      <optgroup label="医費 別累計">
-        <option>病院</option><option>薬局</option><option>市販薬</option>
+      <optgroup label="医療費（処方箋分込み）">
+        <option>精神科</option><option>内科</option><option>整形外科</option><option value="その他医療">その他</option>
+      </optgroup>
+      <optgroup label="市販薬（財布3）">
+        <option>市販薬</option>
       </optgroup>
     </select>
     <label>支払方法</label>
@@ -362,7 +365,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>日付</label><input id="inDate" type="date">
     <label>名目</label>
     <select id="inType">
-      <option>障害年金</option><option>医費補助</option><option>福祉医療費</option><option>返金</option>
+      <option>障害年金</option><option>おやたか医療援助</option><option>おやたかおこづかい</option><option>返金</option>
       <option>臨時収入</option><option>売上</option><option>その他</option><option>借入 前借り</option>
     </select>
     <label>入金先</label><select id="inTo"></select>
@@ -383,12 +386,12 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
   <div class="card okBox">
     <h2>🗺️ 作戦司令室</h2>
-    <div class="row"><span>🟩 南長野基地</span><strong>補給基地</strong></div>
-    <p class="small">任務：福祉医療費受取、月残り生活費保管、七瀬への補給。ここは今週使うお金ではない。</p>
-    <div class="row"><span>🟦 七瀬前線基地</span><strong>今週生活費</strong></div>
+    <div class="row"><span>🟩 南長野基地</span><strong>月の限度額</strong></div>
+    <p class="small">任務：月残り生活費の保管、七瀬への補給。ここは今週使うお金ではない。</p>
+    <div class="row"><span>🟦 七瀬前線基地</span><strong>今週の限度額</strong></div>
     <p class="small">任務：1週間分の生活費、デビット利用、日常運用。使うのは基本ここ。</p>
     <div class="row"><span>💵 財布部隊</span><strong>現金優先</strong></div>
-    <p class="small">優先順：財布1 → 財布4医療費 → 財布3 → スマホポケット → ゆうちょ → 七瀬。デビットは温存。</p>
+    <p class="small">優先順：財布1 → 財布4医療費 → 財布3市販薬 → スマホポケット → ゆうちょ → 七瀬。デビットは温存。</p>
     <div class="row"><span>🎯 作戦目標</span><strong>南長野 → 七瀬 → 生活</strong></div>
     <p class="small">七瀬に月額全部を置かない。週ごとに補給する。</p>
     <div class="row"><span>🚨 最重要命令</span><strong>補給基地を空にしない</strong></div>
@@ -537,13 +540,14 @@ const THEORETICAL_LIFE_BUDGET=43500, LIFE_BUDGET=40000, SAVING_OTHER=3500, WEEK_
 const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T23:59:59");
 const lifeCats=["食費","日用品","雑費","ペット費","その他"];
 const adjustmentCats=["差額計算"];
-const medicalCats=["病院","薬局","市販薬"];
-const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
-const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
+const medicalCats=["精神科","内科","整形外科","その他医療"];
+const otcCats=["市販薬"];
+const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 今週の限度額","八十二 南長野 月の限度額","Olive 来月keep"];
+const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 今週の限度額":818,"八十二 南長野 月の限度額":289,"Olive 来月keep":0};
 const defaultGoals={petGoal:5000};
 const bills=[
  {date:"2026-06-15",name:"障害年金",amount:107499,type:"income"},
- {date:"2026-06-20",name:"医費補助",amount:30000,type:"income"},
+ {date:"2026-06-20",name:"おやたか医療援助",amount:30000,type:"income"},
  {date:"2026-06-25",name:"水道",amount:6000,type:"fixed"},
  {date:"2026-06-26",name:"スマホ関連",amount:30500,type:"fixed"},
  {date:"2026-06-26",name:"スマホ差額 6月",amount:1500,type:"fixed"},
@@ -551,7 +555,7 @@ const bills=[
  {date:"2026-07-02",name:"保険",amount:1500,type:"fixed"},
  {date:"2026-07-04",name:"Niagara Launcher 年払い",amount:1200,type:"fixed"},
  {date:"2026-07-15",name:"障害年金 1ヶ月分目安",amount:107499,type:"income"},
- {date:"2026-07-20",name:"医費補助",amount:30000,type:"income"},
+ {date:"2026-07-20",name:"おやたか医療援助",amount:30000,type:"income"},
  {date:"2026-07-25",name:"水道",amount:6000,type:"fixed"},
  {date:"2026-07-26",name:"スマホ関連",amount:30500,type:"fixed"},
  {date:"2026-07-26",name:"スマホ差額 7月",amount:6500,type:"fixed"},
@@ -568,7 +572,19 @@ function expenses(){return get("mt_expenses",[])}
 function incomes(){return get("mt_incomes",[])}
 function moves(){return get("mt_moves",[])}
 function adjustments(){return get("mt_adjustments",[])}
-function initialWallets(){return get("mt_initial_wallets",defaultInitialWallets)}
+function walletAlias(name){
+  const map={
+    "八十二 七瀬 生活メイン":"八十二 七瀬 今週の限度額",
+    "八十二 南長野 福祉医療":"八十二 南長野 月の限度額"
+  };
+  return map[name] || name;
+}
+function initialWallets(){
+  const saved=get("mt_initial_wallets",defaultInitialWallets);
+  const obj={...defaultInitialWallets};
+  Object.entries(saved).forEach(([k,v])=>{obj[walletAlias(k)]=(obj[walletAlias(k)]||0)+Number(v||0)});
+  return obj;
+}
 function goals(){return get("mt_goals",defaultGoals)}
 function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()+((day===0?-6:1)-day));x.setHours(0,0,0,0);return x}
 function sameWeek(a,b){return startWeek(a).getTime()===startWeek(b).getTime()}
@@ -655,9 +671,10 @@ function showExpenseDetail(index){
 function expenseWallet(e){
   if(e.pay==="現金"){
     if(medicalCats.includes(e.category)) return "財布4 医療費";
+    if(otcCats.includes(e.category)) return "財布3 市販薬";
     return "財布1 生活";
   }
-  if(e.pay==="七瀬デビット") return "八十二 七瀬 生活メイン";
+  if(e.pay==="七瀬デビット") return "八十二 七瀬 今週の限度額";
   if(e.pay==="ゆうちょデビット") return "ゆうちょ 固定費";
   if(e.pay==="Oliveデビット") return "Olive 来月keep";
   return "財布1 生活";
@@ -713,8 +730,8 @@ function adjustmentToExpense(index){
   const amt=Math.abs(Number(x.diff)||0);
   if(!amt){alert("金額0円の調整は支出へ戻せません");return}
   if(!confirm("この残高調整を支出へ戻しますか？"))return;
-  const pay=x.wallet==="八十二 七瀬 生活メイン"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
-  const cat=x.wallet==="財布4 医療費"?"病院":(x.wallet==="財布3 市販薬"?"市販薬":"その他");
+  const pay=x.wallet==="八十二 七瀬 今週の限度額"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
+  const cat=x.wallet==="財布4 医療費"?"その他医療":(x.wallet==="財布3 市販薬"?"市販薬":"その他");
   const ex=expenses();
   ex.push({date:x.date||todayISO(),store:"残高調整から戻し",category:cat,pay,amount:amt,memo:(x.reason||"")+" / "+(x.memo||"")});
   a.splice(index,1);
@@ -743,18 +760,19 @@ function saveAdjustmentFromReal(){
 function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
 function calcWallets(){
  let w={...initialWallets()};
- incomes().forEach(i=>{w[i.to]=(w[i.to]||0)+Number(i.amount)});
- moves().forEach(m=>{w[m.from]=(w[m.from]||0)-Number(m.amount);w[m.to]=(w[m.to]||0)+Number(m.amount)});
+ incomes().forEach(i=>{const to=walletAlias(i.to); w[to]=(w[to]||0)+Number(i.amount)});
+ moves().forEach(m=>{const from=walletAlias(m.from), to=walletAlias(m.to); w[from]=(w[from]||0)-Number(m.amount);w[to]=(w[to]||0)+Number(m.amount)});
  expenses().forEach(e=>{
    if(e.pay==="現金"){
      if(lifeCats.includes(e.category) || adjustmentCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
      else if(medicalCats.includes(e.category)) w["財布4 医療費"]-=Number(e.amount);
+     else if(otcCats.includes(e.category)) w["財布3 市販薬"]-=Number(e.amount);
    }
-   if(e.pay==="七瀬デビット") w["八十二 七瀬 生活メイン"]-=Number(e.amount);
+   if(e.pay==="七瀬デビット") w["八十二 七瀬 今週の限度額"]-=Number(e.amount);
    if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
    if(e.pay==="Oliveデビット") w["Olive 来月keep"]-=Number(e.amount);
  });
- adjustments().forEach(a=>{w[a.wallet]=(w[a.wallet]||0)+Number(a.diff)});
+ adjustments().forEach(a=>{const wallet=walletAlias(a.wallet); w[wallet]=(w[wallet]||0)+Number(a.diff)});
  return w;
 }
 function daysUntil(dateStr){
@@ -950,7 +968,7 @@ function render(){
    }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td class="right">${yen(m.amount)}</td></tr>`).join("") || "<tr><td colspan='4'>まだ移動記録なし</td></tr>";
  }
  if(document.getElementById("availableCashRows")){
-   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 生活メイン","Olive 来月keep"];
+   const availableNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","八十二 七瀬 今週の限度額","Olive 来月keep"];
    let total=0;
    availableCashRows.innerHTML=availableNames.map(n=>{
      const val=wallets[n]||0;
@@ -964,7 +982,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.6-beta-4", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.6-beta-5", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
