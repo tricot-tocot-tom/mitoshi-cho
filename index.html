@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.7 ズキュン枠運用版</title>
+<title>みゃみゃの見通し帳 ver.1.7.2 金額復旧・総額表示版</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7 ズキュン枠運用版</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.2 金額復旧・総額表示版</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -445,6 +445,8 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
   <div class="card">
     <h2>資金置き場</h2>
+    <div class="row"><span>財産総額</span><strong id="walletGrandTotal">¥0</strong></div>
+    <p class="small">全ての資金置き場の合計。使えるお金ではなく、固定費・医療費・来月資金も含む総額。</p>
     <div id="walletRows"></div>
   </div>
   <div class="card">
@@ -588,6 +590,21 @@ const adjustmentCats=["差額計算"];
 const medicalCats=["病院","薬局","市販薬"];
 const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 今週の限度額","八十二 南長野 月の限度額","Olive 来月keep"];
 const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 今週の限度額":818,"八十二 南長野 月の限度額":289,"Olive 来月keep":0};
+const walletAliases={
+  "八十二 七瀬 生活メイン":"八十二 七瀬 今週の限度額",
+  "八十二 南長野 福祉医療":"八十二 南長野 月の限度額",
+  "財布4 医費":"財布4 医療費",
+  "財布4 医療":"財布4 医療費"
+};
+function canonicalWalletName(name){return walletAliases[name]||name;}
+function normalizedWalletObject(obj){
+  const out={...defaultInitialWallets};
+  Object.entries(obj||{}).forEach(([k,v])=>{
+    const nk=canonicalWalletName(k);
+    out[nk]=(out[nk]||0)+Number(v||0);
+  });
+  return out;
+}
 const defaultGoals={petGoal:5000};
 const bills=[
  {date:"2026-06-15",name:"障害年金",amount:107499,type:"income"},
@@ -616,7 +633,7 @@ function expenses(){return get("mt_expenses",[])}
 function incomes(){return get("mt_incomes",[])}
 function moves(){return get("mt_moves",[])}
 function adjustments(){return get("mt_adjustments",[])}
-function initialWallets(){return get("mt_initial_wallets",defaultInitialWallets)}
+function initialWallets(){return normalizedWalletObject(get("mt_initial_wallets",defaultInitialWallets))}
 function goals(){return get("mt_goals",defaultGoals)}
 function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()+((day===0?-6:1)-day));x.setHours(0,0,0,0);return x}
 function sameWeek(a,b){return startWeek(a).getTime()===startWeek(b).getTime()}
@@ -791,18 +808,19 @@ function saveAdjustmentFromReal(){
 function rowsFromObj(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row"><span>${k}</span><strong>${yen(v)}</strong></div>`).join("")||"<p class='small'>まだ記録なし</p>"}
 function calcWallets(){
  let w={...initialWallets()};
- incomes().forEach(i=>{w[i.to]=(w[i.to]||0)+Number(i.amount)});
- moves().forEach(m=>{w[m.from]=(w[m.from]||0)-Number(m.amount);w[m.to]=(w[m.to]||0)+Number(m.amount)});
+ incomes().forEach(i=>{const to=canonicalWalletName(i.to); w[to]=(w[to]||0)+Number(i.amount)});
+ moves().forEach(m=>{const from=canonicalWalletName(m.from); const to=canonicalWalletName(m.to); w[from]=(w[from]||0)-Number(m.amount);w[to]=(w[to]||0)+Number(m.amount)});
  expenses().forEach(e=>{
    if(e.pay==="現金"){
      if(lifeCats.includes(e.category) || adjustmentCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
      else if(e.category==="市販薬") w["財布3 市販薬"]-=Number(e.amount);
+     else if(medicalCats.includes(e.category)) w["財布4 医療費"]-=Number(e.amount);
    }
    if(e.pay==="七瀬デビット") w["八十二 七瀬 今週の限度額"]-=Number(e.amount);
    if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
    if(e.pay==="Oliveデビット") w["Olive 来月keep"]-=Number(e.amount);
  });
- adjustments().forEach(a=>{w[a.wallet]=(w[a.wallet]||0)+Number(a.diff)});
+ adjustments().forEach(a=>{const wallet=canonicalWalletName(a.wallet); w[wallet]=(w[wallet]||0)+Number(a.diff)});
  return w;
 }
 function daysUntil(dateStr){
@@ -893,7 +911,7 @@ function renderSettings(){
 function saveInitialBalances(){
  let obj={};
  document.querySelectorAll(".initialInput").forEach(i=>obj[i.dataset.wallet]=Number(i.value)||0);
- set("mt_initial_wallets",obj);render();alert("初期残高を保存したよ");
+ set("mt_initial_wallets",normalizedWalletObject(obj));render();alert("初期残高を保存したよ");
 }
 function saveGoals(){
  set("mt_goals",{petGoal:Number(settingPetGoal.value)||5000});render();alert("目標を保存したよ");
@@ -972,6 +990,7 @@ function render(){
    .join("");
  incomeRows.innerHTML=inc.map((i,index)=>({...i,_i:index})).slice().reverse().map(i=>`<tr><td>${safeCell(i.date)}</td><td>${safeCell(i.type)}</td><td>${safeCell(i.to)}</td><td class="right">${yen(i.amount)}</td><td>${safeCell(i.memo||"")}</td><td><button class="miniBtn" onclick="startIncomeEdit(${i._i})">修正</button> <button class="miniBtn" onclick="deleteIncome(${i._i})">削除</button></td></tr>`).join("");
  walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
+ if(document.getElementById("walletGrandTotal")){walletGrandTotal.textContent=yen(walletNames.reduce((sum,n)=>sum+Number(wallets[n]||0),0));}
  if(document.getElementById("adjustmentRows")){
    adjustmentRows.innerHTML=adjustments().map((a,index)=>({...a,_i:index})).slice().reverse().map(a=>`<tr><td>${safeCell(a.date)}</td><td>${safeCell(a.wallet)}</td><td class="right">${adjustmentLabel(a)}</td><td>${safeCell(a.reason||"")}</td><td>${safeCell(a.memo||"")}</td><td><button class="miniBtn" onclick="adjustmentToExpense(${a._i})">支出へ戻す</button> <button class="miniBtn" onclick="deleteAdjustment(${a._i})">削除</button></td></tr>`).join("") || "<tr><td colspan='6'>まだ調整なし</td></tr>";
  }
