@@ -586,8 +586,8 @@ const TEST_START=new Date("2026-06-15T00:00:00"), TEST_END=new Date("2026-08-15T
 const lifeCats=["食費","日用品","趣味・創作（ズキュン枠）","雑費","ペット費","その他"];
 const adjustmentCats=["差額計算"];
 const medicalCats=["病院","薬局","市販薬"];
-const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 生活メイン","八十二 南長野 福祉医療","Olive 来月keep"];
-const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 生活メイン":818,"八十二 南長野 福祉医療":289,"Olive 来月keep":0};
+const walletNames=["財布1 生活","財布2 ペット","財布3 市販薬","財布4 医療費","スマホポケット 緊急","ゆうちょ 固定費","八十二 七瀬 今週の限度額","八十二 南長野 月の限度額","Olive 来月keep"];
+const defaultInitialWallets={"財布1 生活":1120,"財布2 ペット":2000,"財布3 市販薬":0,"財布4 医療費":0,"スマホポケット 緊急":1000,"ゆうちょ 固定費":141,"八十二 七瀬 今週の限度額":818,"八十二 南長野 月の限度額":289,"Olive 来月keep":0};
 const defaultGoals={petGoal:5000};
 const bills=[
  {date:"2026-06-15",name:"障害年金",amount:107499,type:"income"},
@@ -705,7 +705,7 @@ function expenseWallet(e){
     if(e.category==="市販薬") return "財布3 市販薬";
     return "財布1 生活";
   }
-  if(e.pay==="七瀬デビット") return "八十二 七瀬 生活メイン";
+  if(e.pay==="七瀬デビット") return "八十二 七瀬 今週の限度額";
   if(e.pay==="ゆうちょデビット") return "ゆうちょ 固定費";
   if(e.pay==="Oliveデビット") return "Olive 来月keep";
   return "財布1 生活";
@@ -761,7 +761,7 @@ function adjustmentToExpense(index){
   const amt=Math.abs(Number(x.diff)||0);
   if(!amt){alert("金額0円の調整は支出へ戻せません");return}
   if(!confirm("この残高調整を支出へ戻しますか？"))return;
-  const pay=x.wallet==="八十二 七瀬 生活メイン"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
+  const pay=x.wallet==="八十二 七瀬 今週の限度額"?"七瀬デビット":x.wallet==="ゆうちょ 固定費"?"ゆうちょデビット":x.wallet==="Olive 来月keep"?"Oliveデビット":"現金";
   const cat=x.wallet==="財布3 市販薬"?"市販薬":"その他";
   const ex=expenses();
   ex.push({date:x.date||todayISO(),store:"残高調整から戻し",category:cat,pay,amount:amt,memo:(x.reason||"")+" / "+(x.memo||"")});
@@ -798,7 +798,7 @@ function calcWallets(){
      if(lifeCats.includes(e.category) || adjustmentCats.includes(e.category)) w["財布1 生活"]-=Number(e.amount);
      else if(e.category==="市販薬") w["財布3 市販薬"]-=Number(e.amount);
    }
-   if(e.pay==="七瀬デビット") w["八十二 七瀬 生活メイン"]-=Number(e.amount);
+   if(e.pay==="七瀬デビット") w["八十二 七瀬 今週の限度額"]-=Number(e.amount);
    if(e.pay==="ゆうちょデビット") w["ゆうちょ 固定費"]-=Number(e.amount);
    if(e.pay==="Oliveデビット") w["Olive 来月keep"]-=Number(e.amount);
  });
@@ -998,7 +998,7 @@ function render(){
    }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td class="right">${yen(m.amount)}</td></tr>`).join("") || "<tr><td colspan='4'>まだ移動記録なし</td></tr>";
  }
  if(document.getElementById("availableCashRows")){
-   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 生活メイン","Olive 来月keep"];
+   const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 今週の限度額","Olive 来月keep"];
    let total=0;
    availableCashRows.innerHTML=availableNames.map(n=>{
      const val=wallets[n]||0;
