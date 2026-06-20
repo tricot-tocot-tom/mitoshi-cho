@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.7.2 金額復旧・総額表示版</title>
+<title>みゃみゃの見通し帳 ver.1.7.3 資金移動復旧版</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.2 金額復旧・総額表示版</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.3 資金移動復旧版</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -494,7 +494,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <h2>資金移動履歴</h2>
     <label>検索 移動元・移動先</label>
     <input id="moveSearch" class="searchBox" placeholder="例：七瀬、ゆうちょ、財布1" oninput="render()">
-    <table><thead><tr><th>日付</th><th>移動元</th><th>移動先</th><th>カテゴリ</th><th class="right">金額</th></tr></thead><tbody id="moveRows"></tbody></table>
+    <table><thead><tr><th>日付</th><th>移動元</th><th>移動先</th><th>カテゴリ</th><th class="right">金額</th><th>操作</th></tr></thead><tbody id="moveRows"></tbody></table>
   </div>
 
   <div class="card">
@@ -690,10 +690,36 @@ function deleteIncome(index){
  const a=incomes(); const i=a[index]; if(!i){alert("データが見つかりません");return}
  if(confirm((i.date||"")+" "+(i.type||"収入")+" "+yen(i.amount)+" を削除しますか？")){ a.splice(index,1); set("mt_incomes",a); clearIncomeForm(); render(); }
 }
+function normalizeDateInput(el){
+  if(!el)return "";
+  if(el.value)return el.value.replaceAll("/","-");
+  if(el.valueAsDate instanceof Date && !isNaN(el.valueAsDate))return el.valueAsDate.toISOString().slice(0,10);
+  return "";
+}
 function addMove(){
- const item={date:mvDate.value,from:mvFrom.value,to:mvTo.value,amount:Number(mvAmount.value),category:(mvCategory?mvCategory.value:"その他")};
+ const date=normalizeDateInput(document.getElementById("mvDate")) || todayISO();
+ const from=canonicalWalletName(document.getElementById("mvFrom")?.value || "");
+ const to=canonicalWalletName(document.getElementById("mvTo")?.value || "");
+ const amount=Number(document.getElementById("mvAmount")?.value || 0);
+ const category=document.getElementById("mvCategory")?.value || "その他";
+ const item={date,from,to,amount,category};
  if(!item.date||!item.amount||item.from===item.to){alert("日付・金額・移動先を確認してね");return}
- const a=moves();a.push(item);set("mt_moves",a);mvAmount.value="";render()
+ const a=moves();
+ a.push(item);
+ set("mt_moves",a);
+ mvAmount.value="";
+ render();
+ alert("資金移動を記録しました");
+}
+function deleteMove(index){
+ const a=moves();
+ const m=a[index];
+ if(!m){alert("データが見つかりません");return}
+ if(confirm((m.date||"")+" "+(m.from||"")+" → "+(m.to||"")+" "+yen(m.amount)+" の資金移動を削除しますか？")){
+   a.splice(index,1);
+   set("mt_moves",a);
+   render();
+ }
 }
 function sumBy(arr,key,filter=()=>true){let o={};arr.filter(filter).forEach(x=>{let k=x[key]||"未記入";o[k]=(o[k]||0)+Number(x.amount)});return o}
 
@@ -1011,10 +1037,10 @@ function render(){
  
  const moveQ=(document.getElementById("moveSearch")?.value || "").toLowerCase();
  if(document.getElementById("moveRows")){
-   moveRows.innerHTML=moves().filter(m=>{
-     const hay=[m.date,m.from,m.to,m.amount].join(" ").toLowerCase();
+   moveRows.innerHTML=moves().map((m,index)=>({...m,_i:index})).filter(m=>{
+     const hay=[m.date,m.from,m.to,m.category,m.amount].join(" ").toLowerCase();
      return !moveQ || hay.includes(moveQ);
-   }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td class="right">${yen(m.amount)}</td></tr>`).join("") || "<tr><td colspan='4'>まだ移動記録なし</td></tr>";
+   }).slice().reverse().map(m=>`<tr><td>${safeCell(m.date)}</td><td>${safeCell(m.from)}</td><td>${safeCell(m.to)}</td><td>${safeCell(m.category||"その他")}</td><td class="right">${yen(m.amount)}</td><td><button class="miniBtn" onclick="deleteMove(${m._i})">削除</button></td></tr>`).join("") || "<tr><td colspan='6'>まだ移動記録なし</td></tr>";
  }
  if(document.getElementById("availableCashRows")){
    const availableNames=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 今週の限度額","Olive 来月keep"];
@@ -1031,7 +1057,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.7-zukyun", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.7.3-transfer-fix", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -1082,8 +1108,9 @@ function importBackupFile(event){
 }
 
 function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_adjustments");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
-document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
+document.querySelectorAll("input[type=date]").forEach(i=>{ if(!i.value)i.value=todayISO(); });
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
+if(document.getElementById("mvFrom") && document.getElementById("mvTo") && mvFrom.value===mvTo.value && mvTo.options.length>1){mvTo.selectedIndex=1;}
 render();
 </script>
 </body>
