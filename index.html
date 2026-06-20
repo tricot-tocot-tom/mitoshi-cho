@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.7.3 資金移動復旧版</title>
+<title>みゃみゃの見通し帳 ver.1.7.4 バックアップ強化・資金移動安定版</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -91,7 +91,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.3 資金移動復旧版</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.4 バックアップ強化・資金移動安定版</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -199,6 +199,9 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <div class="row"><span>保存先</span><strong>Google Drive</strong></div>
     <div class="row"><span>おすすめ頻度</span><strong>週1回・月末</strong></div>
     <div class="row"><span>最終バックアップ</span><strong id="lastBackupHome">未実施</strong></div>
+    <button class="light" onclick="downloadBackup()">今すぐバックアップJSONを保存</button>
+    <button class="light" onclick="checkDataIntegrity()">データ安全チェック</button>
+    <div id="backupCheckHome" class="small"></div>
     <p class="small">🐥じゅり「バックアップは、見通し帳のぼうけんのしょよ」</p>
     <p class="small">β版では起動画面のバージョン番号を固定。今後はアプリ内表記だけ更新します。</p>
     <p class="small">支出メモは検索できます。レシートの中身を忘れそうな時はメモへ。</p>
@@ -572,6 +575,9 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
   <div class="card">
     <h2>データ操作</h2>
+    <button class="light" onclick="downloadBackup()">今すぐバックアップJSONを保存</button>
+    <button class="light" onclick="checkDataIntegrity()">データ安全チェック</button>
+    <div id="backupCheckSettings" class="small"></div>
     <button class="secondary" onclick="exportData()">データを書き出し</button>
     <textarea id="exportBox" rows="8" placeholder="ここに書き出しデータが出ます"></textarea>
 <button class="light" onclick="downloadBackup()">バックアップJSONを保存</button>
@@ -690,32 +696,28 @@ function deleteIncome(index){
  const a=incomes(); const i=a[index]; if(!i){alert("データが見つかりません");return}
  if(confirm((i.date||"")+" "+(i.type||"収入")+" "+yen(i.amount)+" を削除しますか？")){ a.splice(index,1); set("mt_incomes",a); clearIncomeForm(); render(); }
 }
-function normalizeDateInput(el){
-  if(!el)return "";
-  if(el.value)return el.value.replaceAll("/","-");
-  if(el.valueAsDate instanceof Date && !isNaN(el.valueAsDate))return el.valueAsDate.toISOString().slice(0,10);
-  return "";
-}
 function addMove(){
- const date=normalizeDateInput(document.getElementById("mvDate")) || todayISO();
+ const date=(document.getElementById("mvDate")?.value || todayISO());
  const from=canonicalWalletName(document.getElementById("mvFrom")?.value || "");
  const to=canonicalWalletName(document.getElementById("mvTo")?.value || "");
  const amount=Number(document.getElementById("mvAmount")?.value || 0);
- const category=document.getElementById("mvCategory")?.value || "その他";
+ const category=(document.getElementById("mvCategory")?.value || "その他");
  const item={date,from,to,amount,category};
- if(!item.date||!item.amount||item.from===item.to){alert("日付・金額・移動先を確認してね");return}
+ if(!item.date){alert("日付を確認してね");return}
+ if(!item.amount || item.amount<=0){alert("金額を確認してね");return}
+ if(!item.from || !item.to || item.from===item.to){alert("移動元と移動先を確認してね");return}
  const a=moves();
  a.push(item);
  set("mt_moves",a);
  mvAmount.value="";
  render();
- alert("資金移動を記録しました");
+ alert("資金移動を記録したよ");
 }
 function deleteMove(index){
  const a=moves();
  const m=a[index];
- if(!m){alert("データが見つかりません");return}
- if(confirm((m.date||"")+" "+(m.from||"")+" → "+(m.to||"")+" "+yen(m.amount)+" の資金移動を削除しますか？")){
+ if(!m){alert("資金移動データが見つかりません");return}
+ if(confirm((m.date||"")+" "+(m.from||"")+" → "+(m.to||"")+" "+yen(m.amount)+" を削除しますか？")){
    a.splice(index,1);
    set("mt_moves",a);
    render();
@@ -1034,6 +1036,7 @@ function render(){
    }).join("") || "<p class='small'>45日以内の予定なし</p>";
  }
  if(document.getElementById("lastBackupHome")){lastBackupHome.textContent=localStorage.getItem("mt_last_backup")||"未実施";}
+ updateBackupCheckDisplay();
  
  const moveQ=(document.getElementById("moveSearch")?.value || "").toLowerCase();
  if(document.getElementById("moveRows")){
@@ -1056,8 +1059,53 @@ function render(){
  renderSettings();
 }
 
+
+function dataIntegrityMessages(){
+ const msgs=[];
+ const ex=expenses(), inc=incomes(), mv=moves(), adj=adjustments();
+ const allWallets=new Set(walletNames);
+ ex.forEach((e,i)=>{
+   if(!e.date) msgs.push("支出"+(i+1)+"件目：日付なし");
+   if(!(Number(e.amount)>0)) msgs.push("支出"+(i+1)+"件目：金額が0または不正");
+ });
+ inc.forEach((x,i)=>{
+   if(!x.date) msgs.push("収入"+(i+1)+"件目：日付なし");
+   if(!(Number(x.amount)>0)) msgs.push("収入"+(i+1)+"件目：金額が0または不正");
+   if(!allWallets.has(canonicalWalletName(x.to))) msgs.push("収入"+(i+1)+"件目：入金先が不明");
+ });
+ mv.forEach((m,i)=>{
+   const from=canonicalWalletName(m.from), to=canonicalWalletName(m.to);
+   if(!m.date) msgs.push("資金移動"+(i+1)+"件目：日付なし");
+   if(!(Number(m.amount)>0)) msgs.push("資金移動"+(i+1)+"件目：金額が0または不正");
+   if(!allWallets.has(from)) msgs.push("資金移動"+(i+1)+"件目：移動元が不明");
+   if(!allWallets.has(to)) msgs.push("資金移動"+(i+1)+"件目：移動先が不明");
+   if(from===to) msgs.push("資金移動"+(i+1)+"件目：移動元と移動先が同じ");
+ });
+ adj.forEach((a,i)=>{
+   if(!a.date) msgs.push("残高調整"+(i+1)+"件目：日付なし");
+   if(!allWallets.has(canonicalWalletName(a.wallet))) msgs.push("残高調整"+(i+1)+"件目：置き場が不明");
+   if(Number.isNaN(Number(a.diff))) msgs.push("残高調整"+(i+1)+"件目：差額が不正");
+ });
+ return msgs;
+}
+function updateBackupCheckDisplay(){
+ const last=localStorage.getItem("mt_last_backup")||"未実施";
+ const msgs=dataIntegrityMessages();
+ const text=msgs.length ? "⚠ データ確認："+msgs.slice(0,3).join(" / ")+(msgs.length>3?" ほか"+(msgs.length-3)+"件":"") : "✓ データ安全チェック：大きな異常なし";
+ ["backupCheckHome","backupCheckSettings"].forEach(id=>{
+   const el=document.getElementById(id);
+   if(el) el.textContent="最終バックアップ："+last+"｜"+text;
+ });
+}
+function checkDataIntegrity(){
+ const msgs=dataIntegrityMessages();
+ updateBackupCheckDisplay();
+ if(!msgs.length){ alert("データ安全チェック：大きな異常は見つかりませんでした"); return; }
+ alert("データ安全チェックで確認が必要です\n\n"+msgs.join("\n"));
+}
+
 function makeBackupObject(){
- return {version:"1.7.3-transfer-fix", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.7.4-backup-transfer", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -1085,6 +1133,7 @@ function importBackupObject(d){
  if(d.adjustments)set("mt_adjustments",d.adjustments);
  if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
  if(d.goals)set("mt_goals",d.goals);
+ localStorage.setItem("mt_last_backup", localStorage.getItem("mt_last_backup")||"読み込み済み");
  render();
  alert("読み込みました");
 }
@@ -1108,9 +1157,8 @@ function importBackupFile(event){
 }
 
 function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_adjustments");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
-document.querySelectorAll("input[type=date]").forEach(i=>{ if(!i.value)i.value=todayISO(); });
+document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
-if(document.getElementById("mvFrom") && document.getElementById("mvTo") && mvFrom.value===mvTo.value && mvTo.options.length>1){mvTo.selectedIndex=1;}
 render();
 </script>
 </body>
