@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.8.0 壊れない見通し帳</title>
+<title>みゃみゃの見通し帳 ver.1.8.1 行動レベル</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -96,7 +96,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.8.0 壊れない見通し帳</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.8.1 行動レベル</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -254,6 +254,12 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
 
 
+  <div class="card" id="actionLevelCard">
+    <h2>🧭 今日の行動レベル</h2>
+    <div id="actionLevelText" class="actionLevel">--</div>
+    <div id="actionLevelComment" class="actionComment small">数字だけでなく、今日は何を止めるかを見る欄。</div>
+  </div>
+
   <div class="grid">
     <div class="card">
       <div class="small">生活枠 判定</div>
@@ -408,7 +414,16 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
       <option>現金</option><option>七瀬デビット</option><option>ゆうちょデビット</option><option>Oliveデビット</option>
       <option>ソフトバンク払い</option><option>ペイディ</option><option>その他後払い</option>
     </select>
-    <label>金額</label><input id="exAmount" type="number" inputmode="numeric" placeholder="例：2180">
+    <label>金額</label><input id="exAmount" type="number" inputmode="numeric" placeholder="例：2180" oninput="previewExpenseRisk()">
+    <label>予定</label>
+    <select id="exPlan" onchange="previewExpenseRisk()">
+      <option>予定内</option><option>予定外</option>
+    </select>
+    <div class="inlineChecks">
+      <label>痛み <input id="exPain" type="number" min="0" max="10" inputmode="numeric" placeholder="0-10" oninput="previewExpenseRisk()"></label>
+      <label>疲労 <input id="exFatigue" type="number" min="0" max="10" inputmode="numeric" placeholder="0-10" oninput="previewExpenseRisk()"></label>
+    </div>
+    <div id="expenseRiskBox" class="expenseWarn" style="display:none"></div>
     <label>メモ 任意</label><input id="exMemo" placeholder="例：卵、鳥ごはん、湿布">
     <input id="exEditIndex" type="hidden" value="">
     <button id="exSubmitBtn" onclick="saveExpense()">支出を追加</button>
@@ -419,7 +434,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <label>検索 店名・カテゴリ・支払・メモ</label>
     <input id="expenseSearch" class="searchBox" placeholder="例：キラヤ、卵、ペイディ" oninput="render()">
     <p class="small">メモも履歴に表示します。レシートの中身を忘れそうな時はメモへ。</p>
-    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th><th>メモ</th><th>操作</th></tr></thead><tbody id="expenseRows"></tbody></table>
+    <table><thead><tr><th>日付</th><th>店</th><th>カテゴリ</th><th>支払</th><th class="right">金額</th><th>予定</th><th>痛/疲</th><th>メモ</th><th>操作</th></tr></thead><tbody id="expenseRows"></tbody></table>
   </div>
 </section>
 
@@ -603,8 +618,9 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
   <div class="card">
     <h2>データ操作</h2>
-    <button class="secondary" onclick="manualAutoBackup()">今すぐ保護バックアップ</button>
-    <button class="light" onclick="restoreLatestBackup()">前回正常時へ戻す</button>
+    <button id="manualBackupBtn" class="secondary" type="button" onclick="manualAutoBackup()">今すぐ保護バックアップ</button>
+    <div id="manualBackupStatus" class="small">押すと現在のデータを保護バックアップとして保存します。</div>
+    <button class="light" type="button" onclick="restoreLatestBackup()">前回正常時へ戻す</button>
     <div id="backupList" class="small"></div>
     <button class="secondary" onclick="exportData()">データを書き出し</button>
     <textarea id="exportBox" rows="8" placeholder="ここに書き出しデータが出ます"></textarea>
@@ -703,15 +719,53 @@ function startWeek(d){let x=new Date(d);let day=x.getDay();x.setDate(x.getDate()
 function sameWeek(a,b){return startWeek(a).getTime()===startWeek(b).getTime()}
 function showScreen(id,btn){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render()}
 function expenseFormItem(){
- return {date:exDate.value,store:exStore.value.trim()||"未記入",category:exCategory.value,pay:exPay.value,amount:Number(exAmount.value),memo:exMemo.value.trim()};
+ return {
+   date:exDate.value,
+   store:exStore.value.trim()||"未記入",
+   category:exCategory.value,
+   pay:exPay.value,
+   amount:Number(exAmount.value),
+   plan:document.getElementById("exPlan")?exPlan.value:"予定内",
+   pain:document.getElementById("exPain") && exPain.value!=="" ? Number(exPain.value) : null,
+   fatigue:document.getElementById("exFatigue") && exFatigue.value!=="" ? Number(exFatigue.value) : null,
+   memo:exMemo.value.trim()
+ };
+}
+function expenseRiskMessage(item){
+ const amount=Number(item.amount)||0;
+ const pain=Number(item.pain)||0;
+ const fatigue=Number(item.fatigue)||0;
+ const isZukyun=["趣味・創作（ズキュン枠）","雑費","交際費","その他"].includes(item.category);
+ const unplanned=(item.plan||"予定内")==="予定外";
+ if(amount>=10000 && unplanned){return {level:"danger",text:"要再確認：予定外で1万円以上。今日は買う理由より、買わない場合に困る理由を確認。"};}
+ if(amount>=5000 && unplanned && (pain>=7 || fatigue>=7)){return {level:"danger",text:"高額＋予定外＋痛み/疲労強め。24時間置く対象。今すぐ必要な固定費・医療・鳥以外なら止める。"};}
+ if(amount>=5000 && unplanned){return {level:"warn",text:"予定外5,000円以上。高額扱い。購入前に、来月固定費と生活費への影響を確認。"};}
+ if(amount>=3000 && isZukyun && unplanned){return {level:"warn",text:"ズキュン枠の予定外3,000円以上。一呼吸置く買い物。"};}
+ return {level:"ok",text:""};
+}
+function previewExpenseRisk(){
+ const box=document.getElementById("expenseRiskBox");
+ if(!box)return;
+ const item=expenseFormItem();
+ const r=expenseRiskMessage(item);
+ if(!r.text){box.style.display="none";box.textContent="";return}
+ box.style.display="block";
+ box.className="expenseWarn "+(r.level==="danger"?"danger":"");
+ box.textContent="⚠️ "+r.text;
 }
 function clearExpenseForm(){
  exEditIndex.value=""; exStore.value=""; exAmount.value=""; exMemo.value=""; exDate.value=todayISO();
+ if(document.getElementById("exPlan")) exPlan.value="予定内";
+ if(document.getElementById("exPain")) exPain.value="";
+ if(document.getElementById("exFatigue")) exFatigue.value="";
+ previewExpenseRisk();
  exSubmitBtn.textContent="支出を追加"; exCancelBtn.style.display="none";
 }
 function saveExpense(){
  const item=expenseFormItem();
  if(!item.date||!item.amount){alert("日付と金額を入れてね");return}
+ const risk=expenseRiskMessage(item);
+ if(risk.text && !confirm(risk.text+"\n\nそれでも登録しますか？")){return}
  const a=expenses();
  const idx=exEditIndex.value==="" ? -1 : Number(exEditIndex.value);
  if(idx>=0 && a[idx]){ a[idx]=item; } else { a.push(item); }
@@ -719,7 +773,11 @@ function saveExpense(){
 }
 function startExpenseEdit(index){
  const e=expenses()[index]; if(!e){alert("データが見つかりません");return}
- exEditIndex.value=index; exDate.value=e.date||todayISO(); exStore.value=e.store||""; exCategory.value=e.category||"食費"; exPay.value=e.pay||"現金"; exAmount.value=e.amount||""; exMemo.value=e.memo||"";
+ exEditIndex.value=index; exDate.value=e.date||todayISO(); exStore.value=e.store||""; exCategory.value=e.category||"食費"; exPay.value=e.pay||"現金"; exAmount.value=e.amount||"";
+ if(document.getElementById("exPlan")) exPlan.value=e.plan||"予定内";
+ if(document.getElementById("exPain")) exPain.value=(e.pain==null?"":e.pain);
+ if(document.getElementById("exFatigue")) exFatigue.value=(e.fatigue==null?"":e.fatigue);
+ exMemo.value=e.memo||""; previewExpenseRisk();
  exSubmitBtn.textContent="支出の修正を保存"; exCancelBtn.style.display="block";
  window.scrollTo({top:document.getElementById("expense").offsetTop,behavior:"smooth"});
 }
@@ -776,6 +834,8 @@ function showExpenseDetail(index){
     "カテゴリ：" + (e.category || "") + "\n" +
     "支払方法：" + (e.pay || "") + "\n" +
     "金額：" + yen(e.amount) + "\n" +
+    "予定：" + (e.plan || "予定内") + "\n" +
+    "痛み：" + (e.pain == null ? "未記入" : e.pain) + " / 疲労：" + (e.fatigue == null ? "未記入" : e.fatigue) + "\n" +
     "メモ：" + (e.memo || "なし")
   );
 }
@@ -967,7 +1027,7 @@ function renderAdvice(lifeRemain,weekRemain,medicalTotal,payObj,wallets,petUsed,
 }
 
 function makeSnapshot(reason){
-  const data={version:"1.8.0",reason:reason||"自動",savedAt:new Date().toISOString()};
+  const data={version:"1.8.2",reason:reason||"自動",savedAt:new Date().toISOString()};
   CORE_KEYS.forEach(k=>data[k]=safeJSON(localStorage.getItem(k),null));
   return data;
 }
@@ -980,7 +1040,21 @@ function createAutoBackup(reason){
     localStorage.setItem("mt_last_auto_backup",new Date().toLocaleString("ja-JP"));
   }catch(e){console.warn("backup failed",e)}
 }
-function manualAutoBackup(){createAutoBackup("手動バックアップ");render();alert("保護バックアップを作成したよ");}
+function manualAutoBackup(){
+  try{
+    createAutoBackup("手動バックアップ");
+    const t=new Date().toLocaleString("ja-JP");
+    localStorage.setItem("mt_last_backup", t);
+    localStorage.setItem("mt_last_manual_backup", t);
+    const status=document.getElementById("manualBackupStatus");
+    if(status) status.textContent="保存しました："+t;
+    render();
+    alert("保護バックアップを作成したよ："+t);
+  }catch(e){
+    console.error(e);
+    alert("バックアップ作成に失敗しました。データを書き出しボタンも試してください。");
+  }
+}
 function restoreBackupIndex(index){
   const list=safeJSON(localStorage.getItem("mt_auto_backups"),[]);
   const b=list[index];
@@ -1038,7 +1112,7 @@ function saveSubscriptions(){
 }
 function renderReleaseNotes(){
  if(!document.getElementById("releaseNotes"))return;
- releaseNotes.innerHTML=`<div class="row"><span>ver1.8.0</span><strong>自動バックアップ・復元・整合性チェック・サブスク終了日</strong></div><div class="row"><span>ver1.7.5</span><strong>防衛残高・引落チェック</strong></div><div class="row"><span>ver1.7.4</span><strong>全財産累計復活</strong></div>`;
+ releaseNotes.innerHTML=`<div class="row"><span>ver1.8.2</span><strong>保護バックアップボタンの押下不具合修正・保存時刻表示</strong></div><div class="row"><span>ver1.8.1</span><strong>予定内/予定外・痛み疲労メモ・高額支出警告・行動レベル</strong></div><div class="row"><span>ver1.8.0</span><strong>自動バックアップ・復元・整合性チェック・サブスク終了日</strong></div><div class="row"><span>ver1.7.5</span><strong>防衛残高・引落チェック</strong></div><div class="row"><span>ver1.7.4</span><strong>全財産累計復活</strong></div>`;
 }
 
 function renderSettings(){
@@ -1066,6 +1140,17 @@ function setRemainBar(barId,labelId,remain,budget){
  if(pct<=30){bar.classList.add("red");}
  else if(pct<=50){bar.classList.add("yellow");}
  label.textContent=`残り ${pct}%（70%以上 緑 / 50%以下 黄 / 30%以下 赤）`;
+}
+
+function calcActionLevel(lifeRemain,weekRemain,defenseBalance,unpaidFixed30,ex){
+ const recentRisk=ex.filter(e=>{
+   const d=daysUntil(e.date||todayISO());
+   return d<=0 && d>=-7 && (e.plan==="予定外") && Number(e.amount)>=5000;
+ }).length;
+ if(defenseBalance<0 || unpaidFixed30>50000){return {level:"🔴 レベル4：危険", cls:"dangerText", comment:"固定費防衛が最優先。医療・鳥・最低限の食費以外は止める。"};}
+ if(lifeRemain<0 || weekRemain<0 || recentRisk>=2){return {level:"🟠 レベル3：防衛", cls:"dangerText", comment:"生活枠または今週枠が崩れている。衣類・趣味・ズキュン枠は停止。買うなら食費・医療・鳥だけ。"};}
+ if(defenseBalance<10000 || lifeRemain<5000 || weekRemain<2000 || recentRisk>=1){return {level:"🟡 レベル2：節約", cls:"warn", comment:"破綻ではないが余白は薄い。予定外3,000円以上は一呼吸、5,000円以上は高額扱い。"};}
+ return {level:"🟢 レベル1：安心", cls:"ok", comment:"予定どおり生活して大丈夫。ただし全体残高は使っていい金額ではない。"};
 }
 
 function render(){
@@ -1121,6 +1206,9 @@ function render(){
    defenseAfterBills.className="big "+(defenseBalance<0?"dangerText":defenseBalance<10000?"warn":"ok");
  }
  if(document.getElementById("defenseNote")) defenseNote.textContent = defenseBalance<0 ? "固定費を守ると赤字予測。衣類・趣味・後払いは停止。" : defenseBalance<10000 ? "破綻は避けられるが薄い。固定費チェック優先。" : "固定費後も防衛残あり。ただし使っていい額ではない。";
+ const action=calcActionLevel(lifeRemain,weekRemain,defenseBalance,unpaidFixed30,ex);
+ if(document.getElementById("actionLevelText")){actionLevelText.textContent=action.level; actionLevelText.className="actionLevel "+action.cls;}
+ if(document.getElementById("actionLevelComment")) actionLevelComment.textContent=action.comment;
  renderAlerts();
  renderAdvice(lifeRemain,weekRemain,medUsed,payObj,wallets,petUsed,g.petGoal);
  const up=bills.map(b=>({...b,d:new Date(b.date+"T00:00:00")})).filter(b=>b.d>=today&&b.d<=new Date(today.getTime()+30*86400000)).sort((a,b)=>a.d-b.d);
@@ -1141,6 +1229,8 @@ function render(){
      +"<td>"+safeCell(e.category)+"</td>"
      +"<td>"+safeCell(e.pay)+"</td>"
      +"<td class='right'>"+yen(e.amount)+"</td>"
+     +"<td>"+safeCell(e.plan || "予定内")+"</td>"
+     +"<td>"+safeCell((e.pain==null?"-":e.pain)+"/"+(e.fatigue==null?"-":e.fatigue))+"</td>"
      +"<td>"+safeCell(e.memo || "")+"</td>"
      +"<td><button class='miniBtn' onclick='showExpenseDetail("+e._i+")'>見る</button> "
      +"<button class='miniBtn' onclick='startExpenseEdit("+e._i+")'>修正</button> "
@@ -1194,7 +1284,7 @@ function render(){
 }
 
 function makeBackupObject(){
- return {version:"1.8.0-safe", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals(), billChecks:billChecks(), subscriptions:subscriptions()};
+ return {version:"1.8.2-backup-button-fixed", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals(), billChecks:billChecks(), subscriptions:subscriptions()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -1250,7 +1340,14 @@ function importBackupFile(event){
 function resetAll(){if(confirm("全部消します。よろしいですか？")){createAutoBackup("全削除前");["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions"].forEach(k=>localStorage.removeItem(k));render()}}
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
-if(!localStorage.getItem("mt_session_backup_done_1_8_0")){createAutoBackup("ver1.8.0起動時");localStorage.setItem("mt_session_backup_done_1_8_0","1");}
+
+window.manualAutoBackup=manualAutoBackup;
+window.restoreLatestBackup=restoreLatestBackup;
+document.addEventListener("DOMContentLoaded",()=>{
+  const btn=document.getElementById("manualBackupBtn");
+  if(btn){ btn.disabled=false; btn.addEventListener("click", manualAutoBackup); }
+});
+if(!localStorage.getItem("mt_session_backup_done_1_8_2")){createAutoBackup("ver1.8.2起動時");localStorage.setItem("mt_session_backup_done_1_8_2","1");}
 render();
 </script>
 </body>
