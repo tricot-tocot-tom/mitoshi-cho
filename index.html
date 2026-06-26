@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.7.3 引落チェック版</title>
+<title>みゃみゃの見通し帳 ver.1.7.4 全財産累計復活版</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -96,7 +96,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.3 引落チェック版</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.4 全財産累計復活版</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -446,6 +446,12 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
     <p class="small">七瀬に月額全部を置かない。週ごとに補給する。</p>
     <div class="row"><span>🚨 最重要命令</span><strong>補給基地を空にしない</strong></div>
     <p class="small">🐦ちゅの「七瀬は前線、南長野は補給基地でし」</p>
+  </div>
+
+  <div class="card okBox">
+    <h2>💰 全財産累計</h2>
+    <div class="row"><span>全口座・全財布の合計</span><strong id="allAssetTotal">--</strong></div>
+    <p class="small">ゆうちょ固定費・Olive来月keep・南長野・七瀬・各財布を全部含めた総額。使っていい金額ではなく、全体把握用。</p>
   </div>
 
   <div class="card">
@@ -992,6 +998,8 @@ function render(){
      +"</tr>")
    .join("");
  incomeRows.innerHTML=inc.map((i,index)=>({...i,_i:index})).slice().reverse().map(i=>`<tr><td>${safeCell(i.date)}</td><td>${safeCell(i.type)}</td><td>${safeCell(i.to)}</td><td class="right">${yen(i.amount)}</td><td>${safeCell(i.memo||"")}</td><td><button class="miniBtn" onclick="startIncomeEdit(${i._i})">修正</button> <button class="miniBtn" onclick="deleteIncome(${i._i})">削除</button></td></tr>`).join("");
+ const allAssetTotalValue=walletNames.reduce((sum,n)=>sum+(Number(wallets[n])||0),0);
+ if(document.getElementById("allAssetTotal")) allAssetTotal.textContent=yen(allAssetTotalValue);
  walletRows.innerHTML=walletNames.map(n=>`<div class="row"><span>${n}</span><strong>${yen(wallets[n])}</strong></div>`).join("");
  if(document.getElementById("adjustmentRows")){
    adjustmentRows.innerHTML=adjustments().map((a,index)=>({...a,_i:index})).slice().reverse().map(a=>`<tr><td>${safeCell(a.date)}</td><td>${safeCell(a.wallet)}</td><td class="right">${adjustmentLabel(a)}</td><td>${safeCell(a.reason||"")}</td><td>${safeCell(a.memo||"")}</td><td><button class="miniBtn" onclick="adjustmentToExpense(${a._i})">支出へ戻す</button> <button class="miniBtn" onclick="deleteAdjustment(${a._i})">削除</button></td></tr>`).join("") || "<tr><td colspan='6'>まだ調整なし</td></tr>";
