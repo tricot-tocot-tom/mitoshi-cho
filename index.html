@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.7.4 全財産累計復活版</title>
+<title>みゃみゃの見通し帳 ver.1.8.0 壊れない見通し帳</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -96,7 +96,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.7.4 全財産累計復活版</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.8.0 壊れない見通し帳</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -210,6 +210,15 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
 
 
+
+  <div class="card okBox">
+    <h2>🛡️ データ保護</h2>
+    <div class="row"><span>自動バックアップ</span><strong id="autoBackupStatus">起動中</strong></div>
+    <div class="row"><span>整合性チェック</span><strong id="integrityStatus">確認中</strong></div>
+    <div class="row"><span>復元候補</span><strong id="backupCountHome">--</strong></div>
+    <p class="small">登録・修正・削除の前に、自動で直前データを残します。金額が崩れたら設定タブの「前回正常時へ戻す」を使ってください。</p>
+  </div>
+
   <div class="card">
     <h2>今日のアドバイス</h2>
     <div id="advice" class="big" style="font-size:18px"></div>
@@ -247,20 +256,25 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 
   <div class="grid">
     <div class="card">
-      <div class="small">生活枠 残り / 実使用上限40,000円</div>
+      <div class="small">生活枠 判定</div>
       <div id="lifeRemain" class="big">--</div>
-      <div class="budgetMeter"><div id="lifeRemainBar" class="budgetFill"></div></div>
-      <div id="lifePercent" class="percentLabel"></div>
-      <div class="small">理論枠43,500円のうち、3,500円は貯金その他として防衛。</div>
+      <div id="lifeStatusNote" class="small">40,000円枠。超えたら「あと何円戻すか」を見る。</div>
     </div>
     <div class="card">
-      <div class="small">今週残り / 10,000円</div>
+      <div class="small">今週 判定</div>
       <div id="weekRemain" class="big">--</div>
-      <div class="budgetMeter"><div id="weekRemainBar" class="budgetFill"></div></div>
-      <div id="weekPercent" class="percentLabel"></div>
+      <div id="weekStatusNote" class="small">10,000円枠。超過中は食費・医療・鳥だけ。</div>
     </div>
-    <div class="card"><div class="small">今日使える目安</div><div id="dailyAmount" class="big">--</div></div>
-    <div class="card"><div class="small">医費累計</div><div id="medicalTotalTop" class="big">--</div></div>
+    <div class="card">
+      <div class="small">30日内 未チェック固定費</div>
+      <div id="unpaidFixedTop" class="big">--</div>
+      <div class="small">チェック済みは除外。次に守る支払いの合計。</div>
+    </div>
+    <div class="card">
+      <div class="small">引落後 防衛残高</div>
+      <div id="defenseAfterBills" class="big">--</div>
+      <div id="defenseNote" class="small">使える置き場 − 未チェック固定費。ここが赤なら買い物停止。</div>
+    </div>
   </div>
   <div class="card">
     <h2>貯金その他 防衛枠</h2>
@@ -576,7 +590,22 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
 
   <div class="card">
+    <h2>サブスク終了日</h2>
+    <p class="small">継続・終了予定・終了済みをここで管理。Canvaのように「今月引かれたけど次回更新なし」の確認用。</p>
+    <div id="subscriptionRows"></div>
+    <button onclick="saveSubscriptions()">サブスク終了日を保存</button>
+  </div>
+
+  <div class="card okBox">
+    <h2>リリースノート</h2>
+    <div id="releaseNotes"></div>
+  </div>
+
+  <div class="card">
     <h2>データ操作</h2>
+    <button class="secondary" onclick="manualAutoBackup()">今すぐ保護バックアップ</button>
+    <button class="light" onclick="restoreLatestBackup()">前回正常時へ戻す</button>
+    <div id="backupList" class="small"></div>
     <button class="secondary" onclick="exportData()">データを書き出し</button>
     <textarea id="exportBox" rows="8" placeholder="ここに書き出しデータが出ます"></textarea>
 <button class="light" onclick="downloadBackup()">バックアップJSONを保存</button>
@@ -615,16 +644,44 @@ const bills=[
  {date:"2026-08-02",name:"保険",amount:1500,type:"fixed"},
  {date:"2026-11-12",name:"PicsArt 年払い",amount:6600,type:"fixed"}
 ];
+const defaultSubscriptions=[
+ {name:"radiko",amount:480,billDay:2,status:"継続",endDate:""},
+ {name:"Between Plus",amount:800,billDay:5,status:"継続",endDate:""},
+ {name:"SmartNews＋",amount:70,billDay:7,status:"継続",endDate:""},
+ {name:"Google One 100GB",amount:290,billDay:8,status:"継続",endDate:""},
+ {name:"Canva Pro",amount:1180,billDay:26,status:"終了予定",endDate:"2026-07-26"},
+ {name:"ATOK",amount:950,billDay:14,status:"継続",endDate:""},
+ {name:"ChatGPT Plus",amount:2860,billDay:15,status:"継続",endDate:""},
+ {name:"Amazonプライム",amount:600,billDay:17,status:"継続",endDate:""},
+ {name:"電話帳ナビ",amount:360,billDay:23,status:"継続",endDate:""}
+];
 function yen(n){return Math.round(Number(n)||0).toLocaleString("ja-JP")+"円"}
 function todayISO(){return new Date().toISOString().slice(0,10)}
-function get(k,d){return JSON.parse(localStorage.getItem(k)||JSON.stringify(d))}
-function set(k,v){localStorage.setItem(k,JSON.stringify(v))}
+const CORE_KEYS=["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions"];
+let RESTORING=false;
+function safeJSON(text, fallback){try{return JSON.parse(text)}catch(e){return fallback}}
+function get(k,d){return safeJSON(localStorage.getItem(k),d)}
+function validateMoneyValue(n){return Number.isFinite(Number(n)) && Math.abs(Number(n))<10000000}
+function validateCoreValue(k,v){
+  if(["mt_expenses","mt_incomes","mt_moves"].includes(k)){return Array.isArray(v) && v.every(x=>x && validateMoneyValue(x.amount));}
+  if(k==="mt_adjustments"){return Array.isArray(v) && v.every(x=>x && validateMoneyValue(x.diff));}
+  if(k==="mt_initial_wallets"){return v && typeof v==="object" && Object.values(v).every(validateMoneyValue);}
+  if(k==="mt_goals"){return v && typeof v==="object" && validateMoneyValue(v.petGoal||0);}
+  return true;
+}
+function set(k,v){
+  if(CORE_KEYS.includes(k) && !validateCoreValue(k,v)){alert("データ異常を検知したため保存しません。復元を確認してください。保存先："+k);return false;}
+  if(CORE_KEYS.includes(k) && !RESTORING){createAutoBackup("変更前");}
+  localStorage.setItem(k,JSON.stringify(v));
+  return true;
+}
 function expenses(){return get("mt_expenses",[])}
 function incomes(){return get("mt_incomes",[])}
 function moves(){return get("mt_moves",[])}
 function adjustments(){return get("mt_adjustments",[])}
 function billKey(b){return [b.date,b.name,b.amount,b.type].join("|")}
 function billChecks(){return get("mt_bill_checks",{})}
+function subscriptions(){return get("mt_subscriptions",defaultSubscriptions)}
 function isBillPaid(b){return !!billChecks()[billKey(b)]}
 function toggleBillPaid(index){
  const b=bills[index];
@@ -908,6 +965,82 @@ function renderAdvice(lifeRemain,weekRemain,medicalTotal,payObj,wallets,petUsed,
  if(lifeRemain<0){msg="🐥じゅり「警告。40,000円枠を超過しているわ」";detail="ここからは必要品優先。雑費と後払いは停止。";}
  advice.textContent=msg;adviceDetail.textContent=detail;
 }
+
+function makeSnapshot(reason){
+  const data={version:"1.8.0",reason:reason||"自動",savedAt:new Date().toISOString()};
+  CORE_KEYS.forEach(k=>data[k]=safeJSON(localStorage.getItem(k),null));
+  return data;
+}
+function createAutoBackup(reason){
+  try{
+    const list=safeJSON(localStorage.getItem("mt_auto_backups"),[]);
+    const snap=makeSnapshot(reason||"自動");
+    list.unshift(snap);
+    localStorage.setItem("mt_auto_backups",JSON.stringify(list.slice(0,10)));
+    localStorage.setItem("mt_last_auto_backup",new Date().toLocaleString("ja-JP"));
+  }catch(e){console.warn("backup failed",e)}
+}
+function manualAutoBackup(){createAutoBackup("手動バックアップ");render();alert("保護バックアップを作成したよ");}
+function restoreBackupIndex(index){
+  const list=safeJSON(localStorage.getItem("mt_auto_backups"),[]);
+  const b=list[index];
+  if(!b){alert("復元データが見つかりません");return}
+  if(!confirm("この時点へ戻します。現在の状態も直前バックアップとして残します。よろしいですか？"))return;
+  createAutoBackup("復元前");
+  RESTORING=true;
+  CORE_KEYS.forEach(k=>{
+    if(b[k]===null || typeof b[k]==="undefined") localStorage.removeItem(k);
+    else localStorage.setItem(k,JSON.stringify(b[k]));
+  });
+  RESTORING=false;
+  render();
+  alert("復元しました");
+}
+function restoreLatestBackup(){restoreBackupIndex(0)}
+function checkIntegrity(){
+  const checks=[];
+  const ex=expenses(), inc=incomes(), mv=moves(), adj=adjustments();
+  checks.push(Array.isArray(ex) && ex.every(e=>validateMoneyValue(e.amount)));
+  checks.push(Array.isArray(inc) && inc.every(e=>validateMoneyValue(e.amount)));
+  checks.push(Array.isArray(mv) && mv.every(e=>validateMoneyValue(e.amount)));
+  checks.push(Array.isArray(adj) && adj.every(e=>validateMoneyValue(e.diff)));
+  const w=calcWallets();
+  checks.push(Object.values(w).every(validateMoneyValue));
+  return checks.every(Boolean);
+}
+function renderBackupList(){
+  const list=safeJSON(localStorage.getItem("mt_auto_backups"),[]);
+  if(document.getElementById("backupCountHome")) backupCountHome.textContent=list.length+"件";
+  if(document.getElementById("autoBackupStatus")) autoBackupStatus.textContent=(localStorage.getItem("mt_last_auto_backup")||"起動時に作成")+" / "+list.length+"件";
+  const ok=checkIntegrity();
+  if(document.getElementById("integrityStatus")){integrityStatus.textContent=ok?"正常":"異常あり"; integrityStatus.className=ok?"ok":"dangerText";}
+  if(document.getElementById("backupList")){
+    backupList.innerHTML=list.length?list.map((b,i)=>{
+      const t=new Date(b.savedAt).toLocaleString("ja-JP");
+      return `<div class="row"><span>${safeCell(t)}<br>${safeCell(b.reason||"")}</span><button class="miniBtn" onclick="restoreBackupIndex(${i})">この時点へ戻す</button></div>`;
+    }).join(""):"<p class='small'>まだ自動バックアップなし</p>";
+  }
+}
+function renderSubscriptions(){
+  if(!document.getElementById("subscriptionRows"))return;
+  const subs=subscriptions();
+  subscriptionRows.innerHTML=subs.map((s,i)=>{
+    const end=s.endDate||"";
+    const endNote=end ? (new Date(end+"T00:00:00")<new Date(todayISO()+"T00:00:00")?"終了日超過":"終了日あり") : "継続";
+    return `<div class="row"><span><strong>${safeCell(s.name)}</strong><br><span class="small">${yen(s.amount)} / ${safeCell(s.billDay)}日 / ${safeCell(endNote)}</span></span><span style="min-width:150px"><select class="subStatus" data-i="${i}"><option ${s.status==="継続"?"selected":""}>継続</option><option ${s.status==="終了予定"?"selected":""}>終了予定</option><option ${s.status==="終了済み"?"selected":""}>終了済み</option></select><input class="subEnd" data-i="${i}" type="date" value="${safeCell(end)}"></span></div>`;
+  }).join("");
+}
+function saveSubscriptions(){
+  const subs=subscriptions().map((s,i)=>({...s}));
+  document.querySelectorAll(".subStatus").forEach(el=>{subs[Number(el.dataset.i)].status=el.value});
+  document.querySelectorAll(".subEnd").forEach(el=>{subs[Number(el.dataset.i)].endDate=el.value});
+  set("mt_subscriptions",subs);render();alert("サブスク終了日を保存したよ");
+}
+function renderReleaseNotes(){
+ if(!document.getElementById("releaseNotes"))return;
+ releaseNotes.innerHTML=`<div class="row"><span>ver1.8.0</span><strong>自動バックアップ・復元・整合性チェック・サブスク終了日</strong></div><div class="row"><span>ver1.7.5</span><strong>防衛残高・引落チェック</strong></div><div class="row"><span>ver1.7.4</span><strong>全財産累計復活</strong></div>`;
+}
+
 function renderSettings(){
  const iw=initialWallets();
  initialBalanceInputs.innerHTML=walletNames.map(n=>`<label>${n}</label><input class="initialInput" data-wallet="${n}" type="number" inputmode="numeric" value="${iw[n]||0}">`).join("");
@@ -944,10 +1077,15 @@ function render(){
  const medUsed=ex.filter(e=>medicalCats.includes(e.category)).reduce((s,e)=>s+Number(e.amount),0);
  const petUsed=ex.filter(e=>e.category==="ペット費").reduce((s,e)=>s+Number(e.amount),0);
  const days=Math.max(1,Math.ceil((TEST_END-today)/86400000));
- lifeRemainEl=lifeRemain; document.getElementById("lifeRemain").textContent=yen(lifeRemain);
- document.getElementById("weekRemain").textContent=yen(weekRemain);
- document.getElementById("dailyAmount").textContent=yen(lifeRemain/days);
- document.getElementById("medicalTotalTop").textContent=yen(medUsed);
+ lifeRemainEl=lifeRemain;
+ const lifeOver=Math.max(0,-lifeRemain);
+ const weekOver=Math.max(0,-weekRemain);
+ document.getElementById("lifeRemain").textContent=lifeRemain>=0 ? yen(lifeRemain) : "超過 "+yen(lifeOver);
+ document.getElementById("lifeRemain").className="big "+(lifeRemain>=0?"ok":"dangerText");
+ document.getElementById("weekRemain").textContent=weekRemain>=0 ? yen(weekRemain) : "超過 "+yen(weekOver);
+ document.getElementById("weekRemain").className="big "+(weekRemain>=0?"ok":"dangerText");
+ if(document.getElementById("lifeStatusNote")) lifeStatusNote.textContent = lifeRemain>=0 ? "40,000円枠内。まだ通常運転可。" : "40,000円枠を超過。次回収入・返金・買わない日でこの額を吸収する。";
+ if(document.getElementById("weekStatusNote")) weekStatusNote.textContent = weekRemain>=0 ? "今週枠内。残額だけ使える。" : "今週枠を超過。週末まで食費・医療・鳥以外は止める。";
 
  const juneFixed=fixedTotalForMonth(6);
  const julyFixed=fixedTotalForMonth(7);
@@ -960,8 +1098,7 @@ function render(){
    fixedJuly.className=fixedTotalClass(julyFixed);
  }
 
- setRemainBar("lifeRemainBar","lifePercent",lifeRemain,LIFE_BUDGET);
- setRemainBar("weekRemainBar","weekPercent",weekRemain,WEEK_BUDGET);
+ 
  petUsedEl=petUsed; petUsed.textContent
  document.getElementById("petUsed").textContent=yen(petUsed);
  document.getElementById("petGoal").textContent=yen(g.petGoal);
@@ -970,6 +1107,20 @@ function render(){
  document.getElementById("petNote").textContent=`達成率 ${pct}%。ペット費は、えさ・医療込みで確保したいお金。`;
  const payObj=sumBy(ex,"pay");
  const wallets=calcWallets();
+ const availableNamesForDefense=["財布1 生活","財布3 市販薬","スマホポケット 緊急","八十二 七瀬 生活メイン","Olive 来月keep"];
+ const usableTotalForDefense=availableNamesForDefense.reduce((sum,n)=>sum+(Number(wallets[n])||0),0);
+ const limit30=new Date(today.getTime()+30*86400000);
+ const unpaidFixed30=bills.filter(b=>b.type==="fixed" && !isBillPaid(b)).map(b=>({...b,d:new Date(b.date+"T00:00:00")})).filter(b=>b.d>=today && b.d<=limit30).reduce((s,b)=>s+Number(b.amount),0);
+ const defenseBalance=usableTotalForDefense-unpaidFixed30;
+ if(document.getElementById("unpaidFixedTop")){
+   unpaidFixedTop.textContent=yen(unpaidFixed30);
+   unpaidFixedTop.className="big "+(unpaidFixed30>30000?"dangerText":unpaidFixed30>10000?"warn":"ok");
+ }
+ if(document.getElementById("defenseAfterBills")){
+   defenseAfterBills.textContent=yen(defenseBalance);
+   defenseAfterBills.className="big "+(defenseBalance<0?"dangerText":defenseBalance<10000?"warn":"ok");
+ }
+ if(document.getElementById("defenseNote")) defenseNote.textContent = defenseBalance<0 ? "固定費を守ると赤字予測。衣類・趣味・後払いは停止。" : defenseBalance<10000 ? "破綻は避けられるが薄い。固定費チェック優先。" : "固定費後も防衛残あり。ただし使っていい額ではない。";
  renderAlerts();
  renderAdvice(lifeRemain,weekRemain,medUsed,payObj,wallets,petUsed,g.petGoal);
  const up=bills.map(b=>({...b,d:new Date(b.date+"T00:00:00")})).filter(b=>b.d>=today&&b.d<=new Date(today.getTime()+30*86400000)).sort((a,b)=>a.d-b.d);
@@ -1037,10 +1188,13 @@ function render(){
  }
 
  renderSettings();
+ renderSubscriptions();
+ renderBackupList();
+ renderReleaseNotes();
 }
 
 function makeBackupObject(){
- return {version:"1.7-zukyun", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals()};
+ return {version:"1.8.0-safe", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals(), billChecks:billChecks(), subscriptions:subscriptions()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -1062,12 +1216,15 @@ function downloadBackup(){
  render();
 }
 function importBackupObject(d){
+ createAutoBackup("読み込み前");
  if(d.expenses)set("mt_expenses",d.expenses);
  if(d.incomes)set("mt_incomes",d.incomes);
  if(d.moves)set("mt_moves",d.moves);
  if(d.adjustments)set("mt_adjustments",d.adjustments);
  if(d.initialWallets)set("mt_initial_wallets",d.initialWallets);
  if(d.goals)set("mt_goals",d.goals);
+ if(d.billChecks)set("mt_bill_checks",d.billChecks);
+ if(d.subscriptions)set("mt_subscriptions",d.subscriptions);
  render();
  alert("読み込みました");
 }
@@ -1090,9 +1247,10 @@ function importBackupFile(event){
  reader.readAsText(file);
 }
 
-function resetAll(){if(confirm("全部消します。よろしいですか？")){localStorage.removeItem("mt_expenses");localStorage.removeItem("mt_incomes");localStorage.removeItem("mt_moves");localStorage.removeItem("mt_adjustments");localStorage.removeItem("mt_initial_wallets");localStorage.removeItem("mt_goals");render()}}
+function resetAll(){if(confirm("全部消します。よろしいですか？")){createAutoBackup("全削除前");["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions"].forEach(k=>localStorage.removeItem(k));render()}}
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
+if(!localStorage.getItem("mt_session_backup_done_1_8_0")){createAutoBackup("ver1.8.0起動時");localStorage.setItem("mt_session_backup_done_1_8_0","1");}
 render();
 </script>
 </body>
