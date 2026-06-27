@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>みゃみゃの見通し帳 ver.1.8.0 壊れない見通し帳</title>
+<title>みゃみゃの見通し帳 ver.1.8.3 安定復旧版</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#7aa7c7">
@@ -96,7 +96,7 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
 </head>
 <body>
 <header>
-  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.8.0 壊れない見通し帳</span></h1>
+  <h1>🌱 みゃみゃの見通し帳 <span class="small">ver.1.8.3 安定復旧版</span></h1>
   <div class="sub">2026/6/11〜8/15@test｜未来予知補助脳</div>
   <div class="tabs">
     <button class="tab active" onclick="showScreen('home',this)">ホーム</button>
@@ -602,6 +602,22 @@ th,td{border-bottom:1px solid #eee;padding:7px 4px;text-align:left;vertical-alig
   </div>
 
   <div class="card">
+    <h2>🧪 研究ノート・アイデア帳</h2>
+    <p class="small">見通し帳の改善案、生活の仮説、痛みと支出の気づきを残す場所。家計データとは別枠で保存します。</p>
+    <label>種類</label>
+    <select id="noteType">
+      <option>💡アイデア</option>
+      <option>🧪仮説</option>
+      <option>✅結果</option>
+      <option>📝メモ</option>
+    </select>
+    <label>内容</label>
+    <textarea id="noteBody" rows="4" placeholder="例：500円の商品を何個も入れると合計を見失いやすい"></textarea>
+    <button onclick="addResearchNote()">研究ノートに追加</button>
+    <div id="researchNotes"></div>
+  </div>
+
+  <div class="card">
     <h2>データ操作</h2>
     <button class="secondary" onclick="manualAutoBackup()">今すぐ保護バックアップ</button>
     <button class="light" onclick="restoreLatestBackup()">前回正常時へ戻す</button>
@@ -657,7 +673,7 @@ const defaultSubscriptions=[
 ];
 function yen(n){return Math.round(Number(n)||0).toLocaleString("ja-JP")+"円"}
 function todayISO(){return new Date().toISOString().slice(0,10)}
-const CORE_KEYS=["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions"];
+const CORE_KEYS=["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions","mt_research_notes"];
 let RESTORING=false;
 function safeJSON(text, fallback){try{return JSON.parse(text)}catch(e){return fallback}}
 function get(k,d){return safeJSON(localStorage.getItem(k),d)}
@@ -682,6 +698,33 @@ function adjustments(){return get("mt_adjustments",[])}
 function billKey(b){return [b.date,b.name,b.amount,b.type].join("|")}
 function billChecks(){return get("mt_bill_checks",{})}
 function subscriptions(){return get("mt_subscriptions",defaultSubscriptions)}
+function researchNotes(){return get("mt_research_notes",[])}
+function addResearchNote(){
+  const body=(document.getElementById("noteBody")?.value||"").trim();
+  const type=document.getElementById("noteType")?.value||"📝メモ";
+  if(!body){alert("内容を入力してね");return;}
+  const list=researchNotes();
+  list.unshift({type,body,createdAt:new Date().toISOString()});
+  set("mt_research_notes",list);
+  if(document.getElementById("noteBody")) noteBody.value="";
+  render();
+}
+function deleteResearchNote(index){
+  const list=researchNotes();
+  if(!list[index])return;
+  if(!confirm("この研究ノートを削除しますか？"))return;
+  list.splice(index,1);
+  set("mt_research_notes",list);
+  render();
+}
+function renderResearchNotes(){
+  if(!document.getElementById("researchNotes"))return;
+  const list=researchNotes();
+  researchNotes.innerHTML=list.length?list.map((n,i)=>{
+    const t=n.createdAt?new Date(n.createdAt).toLocaleString("ja-JP"):"";
+    return `<div class="noteItem"><div class="noteMeta">${safeCell(n.type||"📝メモ")} / ${safeCell(t)}</div><div class="noteBody">${safeCell(n.body||"")}</div><button class="light" onclick="deleteResearchNote(${i})">削除</button></div>`;
+  }).join(""):"<p class='small'>まだ研究ノートはありません。気づきを残していこう。</p>";
+}
 function isBillPaid(b){return !!billChecks()[billKey(b)]}
 function toggleBillPaid(index){
  const b=bills[index];
@@ -967,7 +1010,7 @@ function renderAdvice(lifeRemain,weekRemain,medicalTotal,payObj,wallets,petUsed,
 }
 
 function makeSnapshot(reason){
-  const data={version:"1.8.0",reason:reason||"自動",savedAt:new Date().toISOString()};
+  const data={version:"1.8.3",reason:reason||"自動",savedAt:new Date().toISOString()};
   CORE_KEYS.forEach(k=>data[k]=safeJSON(localStorage.getItem(k),null));
   return data;
 }
@@ -980,7 +1023,14 @@ function createAutoBackup(reason){
     localStorage.setItem("mt_last_auto_backup",new Date().toLocaleString("ja-JP"));
   }catch(e){console.warn("backup failed",e)}
 }
-function manualAutoBackup(){createAutoBackup("手動バックアップ");render();alert("保護バックアップを作成したよ");}
+function manualAutoBackup(){
+  createAutoBackup("手動バックアップ");
+  const t=new Date().toLocaleString("ja-JP");
+  localStorage.setItem("mt_last_backup",t);
+  localStorage.setItem("mt_last_auto_backup",t);
+  render();
+  alert("保護バックアップを作成したよ");
+}
 function restoreBackupIndex(index){
   const list=safeJSON(localStorage.getItem("mt_auto_backups"),[]);
   const b=list[index];
@@ -1038,7 +1088,7 @@ function saveSubscriptions(){
 }
 function renderReleaseNotes(){
  if(!document.getElementById("releaseNotes"))return;
- releaseNotes.innerHTML=`<div class="row"><span>ver1.8.0</span><strong>自動バックアップ・復元・整合性チェック・サブスク終了日</strong></div><div class="row"><span>ver1.7.5</span><strong>防衛残高・引落チェック</strong></div><div class="row"><span>ver1.7.4</span><strong>全財産累計復活</strong></div>`;
+ releaseNotes.innerHTML=`<div class="row"><span>ver1.8.3</span><strong>1.8.0ベースの安定復旧・研究ノート追加・バックアップ表示改善</strong></div><div class="row"><span>ver1.8.0</span><strong>自動バックアップ・復元・整合性チェック・サブスク終了日</strong></div><div class="row"><span>ver1.7.5</span><strong>防衛残高・引落チェック</strong></div><div class="row"><span>ver1.7.4</span><strong>全財産累計復活</strong></div>`;
 }
 
 function renderSettings(){
@@ -1189,12 +1239,13 @@ function render(){
 
  renderSettings();
  renderSubscriptions();
+ renderResearchNotes();
  renderBackupList();
  renderReleaseNotes();
 }
 
 function makeBackupObject(){
- return {version:"1.8.0-safe", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals(), billChecks:billChecks(), subscriptions:subscriptions()};
+ return {version:"1.8.3-stable", savedAt:new Date().toISOString(), expenses:expenses(), incomes:incomes(), moves:moves(), adjustments:adjustments(), initialWallets:initialWallets(), goals:goals(), billChecks:billChecks(), subscriptions:subscriptions(), researchNotes:researchNotes()};
 }
 function exportData(){
  exportBox.value=JSON.stringify(makeBackupObject(),null,2);
@@ -1225,6 +1276,7 @@ function importBackupObject(d){
  if(d.goals)set("mt_goals",d.goals);
  if(d.billChecks)set("mt_bill_checks",d.billChecks);
  if(d.subscriptions)set("mt_subscriptions",d.subscriptions);
+ if(d.researchNotes)set("mt_research_notes",d.researchNotes);
  render();
  alert("読み込みました");
 }
@@ -1247,10 +1299,10 @@ function importBackupFile(event){
  reader.readAsText(file);
 }
 
-function resetAll(){if(confirm("全部消します。よろしいですか？")){createAutoBackup("全削除前");["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions"].forEach(k=>localStorage.removeItem(k));render()}}
+function resetAll(){if(confirm("全部消します。よろしいですか？")){createAutoBackup("全削除前");["mt_expenses","mt_incomes","mt_moves","mt_adjustments","mt_initial_wallets","mt_goals","mt_bill_checks","mt_subscriptions","mt_research_notes"].forEach(k=>localStorage.removeItem(k));render()}}
 document.querySelectorAll("input[type=date]").forEach(i=>i.value=todayISO());
 walletNames.forEach(n=>{mvFrom.add(new Option(n,n));mvTo.add(new Option(n,n));inTo.add(new Option(n,n)); if(document.getElementById("adjWallet")) adjWallet.add(new Option(n,n));});
-if(!localStorage.getItem("mt_session_backup_done_1_8_0")){createAutoBackup("ver1.8.0起動時");localStorage.setItem("mt_session_backup_done_1_8_0","1");}
+if(!localStorage.getItem("mt_session_backup_done_1_8_3")){createAutoBackup("ver1.8.3起動時");localStorage.setItem("mt_session_backup_done_1_8_3","1");}
 render();
 </script>
 </body>
